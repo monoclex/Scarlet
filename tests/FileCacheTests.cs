@@ -2,6 +2,7 @@ using FluentAssertions;
 using Scarlet.Api.Caching;
 using System;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -19,6 +20,60 @@ namespace Scarlet.Tests
 
 			Directory.Delete(directory.FullName, true);
 		}
+
+		#region WhenLockIsPresent_CacheWaitsUntilLockIsGone_ToReadCachedData
+		[Fact]
+		public async Task WhenLockIsPresent_CacheWaitsUntilLockIsGone_ToReadCachedData()
+		{
+			const string key = "test";
+
+			// taken from FileCache implementation
+			var fileName = Convert.ToBase64String(Encoding.ASCII.GetBytes(key));
+			var fileFullPath = Path.Combine(_cache.CacheDirectory.FullName, fileName);
+			var lockFullPath = fileFullPath + ".lock";
+
+			using (var writer = File.CreateText(lockFullPath))
+			{
+			}
+
+			using (var writer = File.CreateText(fileFullPath))
+			{
+				writer.WriteLine("Hello, World!");
+			}
+
+			var taskStarted = false;
+			var taskStopped = false;
+			Memory<byte> result = default;
+
+			// we have created a lock file - let's start up a request for the cache entry
+			var task = Task.Run(async () =>
+			{
+				taskStarted = true;
+				result = await _cache.TryRead(key, async () => throw new Exception()).ConfigureAwait(false);
+				taskStopped = true;
+			});
+
+			// wait until the method in the task is ran
+			SpinWait.SpinUntil(() => taskStarted);
+
+			// we can assume the cache is waiting for the file to exist now, we
+			// wait a second to let it compute whatever
+			await Task.Delay(1000).ConfigureAwait(false);
+
+			// it shouldn't've stopped yet because the lock still exists
+			taskStopped.Should().BeFalse();
+
+			// delete the lock file
+			File.Delete(lockFullPath);
+
+			// now that the lock is gone, the task should stop
+			SpinWait.SpinUntil(() => taskStopped);
+
+			// make sure the result has "Hello, World!"
+			var bytes = result.ToArray();
+			bytes.Should().BeEquivalentTo(Encoding.ASCII.GetBytes("Hello, World!" + Environment.NewLine));
+		}
+		#endregion
 
 		#region WhenCacheCreated_CacheDirectoryIsCreated_IfNotExist
 		private string GetDirectoryThatDoesntExist()

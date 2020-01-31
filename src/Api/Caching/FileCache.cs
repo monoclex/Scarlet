@@ -147,7 +147,7 @@ namespace Scarlet.Api.Caching
 			watcher.EnableRaisingEvents = true;
 
 			// the lock might've dissapeared by the time we get down here and we would've never picked up on it
-			if (IsLock(file))
+			if (!IsLock(file))
 			{
 				tcs.SetCanceled();
 				watcher.Dispose();
