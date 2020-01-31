@@ -6,20 +6,36 @@ using System.Threading.Tasks;
 
 namespace EEUniverse.Library
 {
+	// Mock 'Client' introduced for unit testability
+	public abstract class Client
+	{
+		public abstract event EventHandler<Message> OnMessage;
+
+		public abstract event EventHandler<CloseEventArgs> OnDisconnect;
+
+		public ClientWebSocket _socket;
+
+		public abstract Task SendRawAsync(ArraySegment<byte> bytes);
+
+		public abstract Connection CreateLobbyConnection();
+
+		public abstract Connection CreateWorldConnection(string worldId);
+	}
+
 	/// <summary>
 	/// Provides a client for connecting to Everybody Edits Universe™
 	/// </summary>
-	public class Client
+	public class ActualClient : Client
 	{
 		/// <summary>
 		/// An event that raises when the client receives a message.
 		/// </summary>
-		public event EventHandler<Message> OnMessage;
+		public override event EventHandler<Message> OnMessage;
 
 		/// <summary>
 		/// An event that raises when the connection to the server is lost.
 		/// </summary>
-		public event EventHandler<CloseEventArgs> OnDisconnect;
+		public override event EventHandler<CloseEventArgs> OnDisconnect;
 
 		/// <summary>
 		/// The server to connect to.
@@ -37,14 +53,14 @@ namespace EEUniverse.Library
 		public int MinBuffer { get; set; } = 4096; // 4 kb
 
 		public Thread _messageReceiverThread;
-		public readonly ClientWebSocket _socket;
+		// public readonly ClientWebSocket _socket;
 		public readonly string _token;
 
 		/// <summary>
 		/// Initializes a new client.
 		/// </summary>
 		/// <param name="token">The JWT to connect with.</param>
-		public Client(string token)
+		public ActualClient(string token)
 		{
 			_socket = new ClientWebSocket();
 			_token = token;
@@ -79,18 +95,18 @@ namespace EEUniverse.Library
 		/// Sends a message to the server as an asynchronous operation.<br />Use with caution.
 		/// </summary>
 		/// <param name="bytes">The buffer containing the message to be sent.</param>
-		public Task SendRawAsync(ArraySegment<byte> bytes) => _socket.SendAsync(bytes, WebSocketMessageType.Binary, true, CancellationToken.None);
+		public override Task SendRawAsync(ArraySegment<byte> bytes) => _socket.SendAsync(bytes, WebSocketMessageType.Binary, true, CancellationToken.None);
 
 		/// <summary>
 		/// Creates a connection with the lobby.
 		/// </summary>
-		public Connection CreateLobbyConnection() => new Connection(this, ConnectionScope.Lobby);
+		public override Connection CreateLobbyConnection() => new ActualConnection(this, ConnectionScope.Lobby);
 
 		/// <summary>
 		/// Creates a connection with the specified world.
 		/// </summary>
 		/// <param name="worldId">The world id to connect to.</param>
-		public Connection CreateWorldConnection(string worldId) => new Connection(this, ConnectionScope.World, worldId);
+		public override Connection CreateWorldConnection(string worldId) => new ActualConnection(this, ConnectionScope.World, worldId);
 
 		/// <summary>
 		/// An asynchronous listener to receive incomming messages from the Everybody Edits Universe™ server.

@@ -23,7 +23,7 @@ namespace EEUniverse.LoginExtensions
                 token = googleLoginToken.Id_Token
             }).ReceiveJson<LoginResponse>();
 
-            return new Client(eeuTokenResponse.Token);
+            return new ActualClient(eeuTokenResponse.Token);
         }
 
         private static async Task<GoogleLoginHintResponse> GetGoogleLoginHintAsync(IFlurlRequest request, Dictionary<string, string> cookies)
