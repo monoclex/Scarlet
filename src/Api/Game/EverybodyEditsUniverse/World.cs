@@ -16,6 +16,6 @@ namespace Scarlet.Api.Game.EverybodyEditsUniverse
 		public string Name { get; set; }
 
 		[JsonIgnore]
-		public ushort[] MinimapBlocks { get; internal set; }
+		public ushort[] WorldData { get; internal set; }
 	}
 }

@@ -78,7 +78,7 @@ namespace Scarlet.Api.Game.EverybodyEditsUniverse
 				break;
 			}
 
-			world.MinimapBlocks = WorldDeserializer.Deserialize(initMessage, world.Width, world.Height, worldDataOffset);
+			world.WorldData = WorldDeserializer.Deserialize(initMessage, world.Width, world.Height, worldDataOffset);
 
 			return world;
 		}
