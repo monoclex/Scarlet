@@ -1,31 +1,78 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Scarlet.Api.Game.EverybodyEdits
 {
 	public class World
 	{
-		// ushort block ids are used to conserve memory.
-		// when worlds are in the magnitude of 3000 by 2000, using 24MB in RAM
-		// versus 12MB is a lot of savings.
+		[JsonIgnore]
+		public ushort[] WorldData { get; set; }
 
-		private readonly ushort[,] _worldData;
+		// System.Text.Json breaks compatibility with Newtonsoft.Json:
+		// property names are lowercase, as they should be
+		//
+		// the forums JS has (in my testing) shown to be sensitive towards the casing of these properties
+		// so they are explicitly PascalCase to maintain compatibility
+		[JsonPropertyName(nameof(WorldId))]
+		public string WorldId { get; set; }
 
-		public World(WorldMetadata worldMetadata, ushort[,] worldData)
-		{
-			WorldMetadata = worldMetadata;
-			_worldData = worldData;
-		}
+		[JsonPropertyName(nameof(Name))]
+		public string Name { get; set; }
 
-		public WorldMetadata WorldMetadata { get; }
+		[JsonPropertyName(nameof(Owner))]
+		public string Owner { get; set; }
 
-		public int Width => _worldData.GetLength(0);
-		public int Height => _worldData.GetLength(1);
+		[JsonPropertyName(nameof(Crew))]
+		public string? Crew { get; set; }
 
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public ushort BlockAt(int x, int y) => _worldData[x, y];
+		[JsonPropertyName(nameof(Description))]
+		public string? Description { get; set; }
+
+		[JsonPropertyName(nameof(Type))]
+		public int Type { get; set; }
+
+		[JsonPropertyName(nameof(Width))]
+		public int Width { get; set; }
+
+		[JsonPropertyName(nameof(Height))]
+		public int Height { get; set; }
+
+		[JsonPropertyName(nameof(Plays))]
+		public int Plays { get; set; }
+
+		[JsonPropertyName(nameof(Woots))]
+		public int Woots { get; set; }
+
+		[JsonPropertyName(nameof(TotalWoots))]
+		public int TotalWoots { get; set; }
+
+		[JsonPropertyName(nameof(Likes))]
+		public int Likes { get; set; }
+
+		[JsonPropertyName(nameof(Favorites))]
+		public int Favorites { get; set; }
+
+		[JsonPropertyName(nameof(Visible))]
+		public bool Visible { get; set; }
+
+		[JsonPropertyName(nameof(HideLobby))]
+		public bool HideLobby { get; set; }
+
+		[JsonPropertyName(nameof(MinimapEnabled))]
+		public bool MinimapEnabled { get; set; }
+
+		[JsonPropertyName(nameof(AllowPotions))]
+		public bool AllowPotions { get; set; }
+
+		/// <summary>
+		/// Not explicitly a part of the world metadata - this piece of
+		/// information is included only when the world owner is known
+		/// and cached internally to prevent multiple HTTP requests.
+		/// </summary>
+		[JsonPropertyName(nameof(UserName))]
+		public string? UserName { get; set; }
 	}
 }
