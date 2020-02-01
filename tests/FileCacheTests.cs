@@ -1,5 +1,5 @@
 using FluentAssertions;
-using Scarlet.Api.Caching;
+using Scarlet.Api;
 using System;
 using System.IO;
 using System.Text;

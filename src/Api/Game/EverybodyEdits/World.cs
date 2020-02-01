@@ -74,5 +74,6 @@ namespace Scarlet.Api.Game.EverybodyEdits
 		/// </summary>
 		[JsonPropertyName(nameof(UserName))]
 		public string? UserName { get; set; }
+		public uint BackgroundColor { get; internal set; }
 	}
 }

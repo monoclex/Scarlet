@@ -3,7 +3,7 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Scarlet.Api.Caching
+namespace Scarlet.Api
 {
 	/// <summary>
 	/// Scarlet's <see cref="FileCache"/> is a simplistic take on caching.
