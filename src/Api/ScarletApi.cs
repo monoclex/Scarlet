@@ -30,5 +30,24 @@ namespace Scarlet.Api
 
 		// TODO: figure out a clean way to take the results of an
 		// IScarletGameApi and store them effectively and retrieve them.
+		public ValueTask<Memory<byte>> EEMinimap(string worldId, int scale = 1)
+		{
+			throw new NotImplementedException();
+		}
+
+		public ValueTask<Memory<byte>> EEMetadata(string worldId)
+		{
+			throw new NotImplementedException();
+		}
+
+		public ValueTask<Memory<byte>> EEUMinimap(string worldId, int scale = 1)
+		{
+			throw new NotImplementedException();
+		}
+
+		public ValueTask<Memory<byte>> EEUMetadata(string worldId)
+		{
+			throw new NotImplementedException();
+		}
 	}
 }

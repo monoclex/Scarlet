@@ -8,10 +8,10 @@ namespace Scarlet.Api.Game.EverybodyEdits
 		private readonly Colors _colors;
 		private readonly ClientProvider _clientProvider;
 
-		public ScarletGameApi(Colors everybodyEditsColors)
+		public ScarletGameApi(Colors everybodyEditsColors, ClientProvider clientProvider)
 		{
 			_colors = everybodyEditsColors;
-			_clientProvider = new ClientProvider(everybodyEditsColors);
+			_clientProvider = clientProvider;
 		}
 
 		public async ValueTask<ScarletGameWorld> World(string worldId)
