@@ -49,9 +49,38 @@ namespace Scarlet.Api.Game.EverybodyEditsUniverse
 
 		public async Task<World> DownloadWorld(string worldId)
 		{
-			var (initMessage, roomsMessage) = await DownloadMessages(worldId);
+			const int worldDataOffset = 11;
+			var (initMessage, roomsMessage) = await DownloadMessages(worldId).ConfigureAwait(false);
 
-			throw new NotImplementedException();
+			var world = new World
+			{
+				Plays = -1, // should be retrieved thanks to the LoadRooms lobby message
+				Name = initMessage.Get<string>(6),
+				Owner = initMessage.Get<string>(7),
+				BackgroundColor = initMessage.Get<int>(8),
+				Width = initMessage.Get<int>(9),
+				Height = initMessage.Get<int>(10),
+			};
+
+			// find the room with our world to grab the plays
+			for (var i = 0; i < roomsMessage.Count;)
+			{
+				var id = roomsMessage.Get<string>(i++);
+				var playersOnline = roomsMessage.Get<int>(i++);
+				var messageObject = roomsMessage.GetObject(i++);
+
+				if (id != worldId)
+				{
+					continue;
+				}
+
+				world.Plays = messageObject.Get<int>("p");
+				break;
+			}
+
+			world.MinimapBlocks = WorldDeserializer.Deserialize(initMessage, world.Width, world.Height, worldDataOffset);
+
+			return world;
 		}
 	}
 }

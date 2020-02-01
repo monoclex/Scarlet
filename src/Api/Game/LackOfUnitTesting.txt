@@ -1,0 +1,3 @@
+﻿There is an extreme lack of unit testing in these areas. The primary reason is
+that one acn test for themselves on the live EE/EEU servers if their code
+works, and it only increases technical debt to test this part of the code.
