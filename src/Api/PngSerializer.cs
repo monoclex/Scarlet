@@ -358,10 +358,10 @@ namespace Scarlet.Api
 			public static uint Compute(ReadOnlySpan<byte> data)
 			{
 				// TODO: use Sse42.Crc32 & Sse42.X64.Crc32 for faster hardware computation
-				return SoftwareFallback.Crc32(data);
+				return SoftwareFallback.Compute(data);
 			}
 
-			private static class SoftwareFallback
+			public static class SoftwareFallback
 			{
 				// conversion of http://www.libpng.org/pub/png/spec/1.2/PNG-CRCAppendix.html
 				// we simply expect the caller to generate the crc then pass it through always,
@@ -408,10 +408,36 @@ namespace Scarlet.Api
 					return c;
 				}
 
-				public static uint Crc32(ReadOnlySpan<byte> data)
+				public static uint Compute(ReadOnlySpan<byte> data)
 				{
 					var result = UpdateCrc(0xFFFFFFFF, data) ^ 0xFFFFFFFF;
 					return (uint)result;
+				}
+			}
+
+			public static class HardwareFallback
+			{
+				// control flow taken from https://stackoverflow.com/a/59004565
+				public static uint Compute(ReadOnlySpan<byte> data)
+				{
+					uint crc32 = ~0u;
+
+					int i = 0;
+
+					if (Sse42.X64.IsSupported)
+					{
+						for (; i + 8 < data.Length; i += 8)
+						{
+							crc32 = (uint)Sse42.X64.Crc32(crc32, BinaryPrimitives.ReadUInt64BigEndian(data.Slice(i, 8)));
+						}
+					}
+
+					for (; i < data.Length; i++)
+					{
+						crc32 = Sse42.Crc32(crc32, data[i]);
+					}
+
+					return crc32 ^ ~0u;
 				}
 			}
 		}
