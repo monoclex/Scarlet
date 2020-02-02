@@ -32,6 +32,11 @@ namespace Scarlet
 			var scarlet = new ScarletApi(cache, eeGameApi, eeuGameApi);
 			services.AddSingleton(scarlet);
 
+			services.AddMvc(options =>
+			{
+				options.OutputFormatters.Insert(0, new RawFormatter());
+			});
+
 			services.AddControllers();
 		}
 

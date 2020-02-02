@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Scarlet.Api.Misc;
+using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -47,10 +48,30 @@ namespace Scarlet.Api
 			}
 		}
 
+		private void ReleaseLock(string lockFile)
+		{
+		// using a goto instead of a while because it's easier i guess
+		RETRY_DELETION:
+
+			try
+			{
+				if (IsLock(lockFile))
+				{
+					File.Delete(lockFile);
+				}
+			}
+			catch (IOException)
+			{
+				// pretty bad
+				// TODO: catch multiple failures
+				goto RETRY_DELETION;
+			}
+		}
+
 		private bool IsLock(string lockFile)
 			=> File.Exists(lockFile);
 
-		public async ValueTask<Memory<byte>> TryRead(string cacheKey, Func<ValueTask<Memory<byte>>> compute)
+		public async ValueTask<Memory<byte>> TryRead(string cacheKey, Func<ValueTask<MustFreeBlock>> compute)
 		{
 			var cacheFile = GetCacheFile(cacheKey);
 			var lockFile = GetLockFile(cacheFile);
@@ -86,49 +107,50 @@ namespace Scarlet.Api
 			if (TryObtainLock(lockFile))
 			{
 				// we have the lock
-				var result = await compute().ConfigureAwait(false);
-
 				try
 				{
-					using (var fs = File.OpenWrite(cacheFile))
-					{
-						await fs.WriteAsync(result, default).ConfigureAwait(false);
-					}
-				}
-				catch (IOException)
-				{
+					using var result = await compute().ConfigureAwait(false);
+
 					try
 					{
-						if (File.Exists(cacheFile))
+						using (var fs = File.OpenWrite(cacheFile))
 						{
-							File.Delete(cacheFile);
+							await fs.WriteAsync(result.Memory, default).ConfigureAwait(false);
 						}
 					}
 					catch (IOException)
 					{
-						// oh well i guess
-					}
-				}
-				finally
-				{
-				RETRY_DELETION:
-
-					try
-					{
-						if (IsLock(lockFile))
+						try
 						{
-							File.Delete(lockFile);
+							if (File.Exists(cacheFile))
+							{
+								File.Delete(cacheFile);
+							}
+						}
+						catch (IOException)
+						{
+							// if we couldn't delete the existing old cache file,
+							// that will most likely mean that it has already been
+							// deleted. if it hasn't, oh well i guess
 						}
 					}
-					catch (IOException)
+					finally
 					{
-						// pretty bad
-						// TODO: catch multiple failures
-						goto RETRY_DELETION;
+						ReleaseLock(lockFile);
 					}
-				}
 
-				return result;
+					// TODO: don't new up arrays
+					var copy = new byte[result.Memory.Length];
+					result.Memory.CopyTo(copy);
+					return copy; /*********** FUNCTION EXIT ************/
+				}
+				catch (Exception)
+				{
+					// an exception occurred while computing
+					// we will release the lock, and then rethrow the exception to the caller
+					ReleaseLock(lockFile);
+					throw;
+				}
 			}
 
 			goto RETRY; /*********** RETRY LOOP ************/
@@ -141,7 +163,10 @@ namespace Scarlet.Api
 
 			watcher.Deleted += (sender, e) =>
 			{
-				tcs.SetResult(default);
+				if (!tcs.Task.IsCompleted)
+				{
+					tcs.SetResult(default);
+				}
 			};
 
 			watcher.EnableRaisingEvents = true;
@@ -153,6 +178,9 @@ namespace Scarlet.Api
 				watcher.Dispose();
 				return new ValueTask();
 			}
+
+			// dispose the watcher once the task is done
+			tcs.Task.ContinueWith(_ => watcher.Dispose());
 
 			return new ValueTask(tcs.Task);
 		}

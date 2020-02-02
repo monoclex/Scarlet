@@ -15,6 +15,8 @@ namespace EEUniverse.Library
 
 		public ClientWebSocket _socket;
 
+		public abstract Task ConnectAsync();
+
 		public abstract Task SendRawAsync(ArraySegment<byte> bytes);
 
 		public abstract Connection CreateLobbyConnection();
@@ -69,7 +71,7 @@ namespace EEUniverse.Library
 		/// <summary>
 		/// Establishes a connection with the server and starts listening for messages.
 		/// </summary>
-		public async Task ConnectAsync()
+		public override async Task ConnectAsync()
 		{
 			await _socket.ConnectAsync(new Uri($"{MultiplayerHost}/?a={_token}"), CancellationToken.None);
 

@@ -10,8 +10,8 @@ using System.Runtime.Intrinsics.X86;
 namespace Scarlet.Api
 {
 	/// <summary>
-	/// A custom, entirely hand written PNG serializer with one goal in mind:
-	/// to be fast.
+	/// A custom, entirely hand written PNG serializer with a motto:
+	/// to be memory efficient and fast.
 	/// </summary>
 	public static class PngSerializer
 	{
@@ -21,6 +21,9 @@ namespace Scarlet.Api
 			public int Height;
 			public Memory<ushort> Blocks;
 			public Memory<Rgba32> Palette;
+
+			// TODO: support scale
+			public int Scale;
 		}
 
 		public struct SerializeWorldResult

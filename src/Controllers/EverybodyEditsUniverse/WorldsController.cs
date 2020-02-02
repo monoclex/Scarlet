@@ -25,15 +25,18 @@ namespace Scarlet.Controllers.EverybodyEditsEverybodyEditsUniverse
 
 		// TODO: cleaner return result
 		[HttpGet("{id}")]
-		public async Task<Memory<byte>> Minimap(string id, [FromQuery] int scale = 1)
+		public Task<Memory<byte>> Minimap(string id, [FromQuery] int scale = 1)
 		{
 			scale = Math.Clamp(scale, 1, 4); // TODO: config somewhere
-			return await _scarlet.EEUMinimap(id, scale).ConfigureAwait(false);
+			HttpContext.Response.ContentType = "image/png";
+			return _scarlet.EEUMinimap(id, scale).AsTask();
 		}
 
 		[HttpGet("{id}/meta")]
-		public async Task Metadata(string id)
+		public Task<Memory<byte>> Metadata(string id)
 		{
+			HttpContext.Response.ContentType = "application/json";
+			return _scarlet.EEUMetadata(id).AsTask();
 		}
 
 		[HttpGet("{id}/update")]

@@ -16,6 +16,8 @@ namespace Scarlet
 	[StructLayout(LayoutKind.Explicit)]
 	public struct Rgba32
 	{
+		public const int Size = 4;
+
 		[FieldOffset(0)] public byte R;
 		[FieldOffset(1)] public byte B;
 		[FieldOffset(2)] public byte G;
@@ -85,7 +87,7 @@ namespace Scarlet
 				colorsMap[intKey] = rgba32;
 			}
 
-			var colors = new Rgba32[colorsMap.Max(x => x.Key)];
+			var colors = new Rgba32[colorsMap.Max(x => x.Key) + 1];
 
 			foreach (var (key, value) in colorsMap)
 			{

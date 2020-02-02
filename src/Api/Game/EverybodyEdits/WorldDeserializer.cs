@@ -15,10 +15,18 @@ namespace Scarlet.Api.Game.EverybodyEdits
 		{
 			if (databaseObject.TryGetValue("worlddata", out var worlddata))
 			{
-				Debug.Assert(worlddata is IEnumerable<KeyValuePair<string, object>>[]);
+				Debug.Assert(worlddata is DatabaseArray);
 
 				// newer 'worlddata' world
-				return DeserializeWorlddata(databaseObject, (IEnumerable<KeyValuePair<string, object>>[])worlddata, colors);
+				try
+				{
+					return DeserializeWorlddata(databaseObject, (DatabaseArray)worlddata, colors);
+				}
+				catch (PlayerIOError e)
+				{
+					Console.WriteLine("e");
+					return default;
+				}
 			}
 			else if (databaseObject.TryGetValue("world", out var world))
 			{
@@ -96,7 +104,7 @@ namespace Scarlet.Api.Game.EverybodyEdits
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-		public static ushort[] DeserializeWorlddata(DatabaseObject databaseObject, IEnumerable<KeyValuePair<string, object>>[] objects, Colors colors)
+		public static ushort[] DeserializeWorlddata(DatabaseObject databaseObject, DatabaseArray objects, Colors colors)
 		{
 			// 'worlddata' revolves around each block id & a list of locations
 			// optimizations we may perform are as follows:
@@ -111,15 +119,18 @@ namespace Scarlet.Api.Game.EverybodyEdits
 
 			var spanColors = colors.Values.Span;
 
-			foreach (var entry in objects)
+			foreach (var objEntry in objects)
 			{
+				Debug.Assert(objEntry is DatabaseObject);
+				var entry = (DatabaseObject)objEntry;
+
 				byte[] x = Array.Empty<byte>(),
 					x1 = Array.Empty<byte>(),
 					y = Array.Empty<byte>(),
 					y1 = Array.Empty<byte>();
 
-				int type = 0,
-					layer = 0;
+				uint type = 0;
+				int layer = 0;
 
 				foreach (var (key, value) in entry)
 				{
@@ -152,7 +163,7 @@ namespace Scarlet.Api.Game.EverybodyEdits
 					continue;
 				}
 
-				var color = spanColors[type];
+				var color = spanColors[(int)type];
 
 				// some blocks are very transparent, to the point you can't see
 				// these blocks are "pointless"

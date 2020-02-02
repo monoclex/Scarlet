@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-
+using Scarlet.Api;
+using System;
 using System.Threading.Tasks;
 
 namespace Scarlet.Controllers.EverybodyEdits
@@ -10,23 +11,29 @@ namespace Scarlet.Controllers.EverybodyEdits
 	public class WorldsController : Controller
 	{
 		private readonly ILogger<WorldsController> _logger;
+		private readonly ScarletApi _scarlet;
 
 		public WorldsController
 		(
-			ILogger<WorldsController> logger
+			ILogger<WorldsController> logger,
+			ScarletApi scarlet
 		)
 		{
 			_logger = logger;
+			_scarlet = scarlet;
 		}
 
 		[HttpGet("{id}")]
-		public async Task Minimap(string id)
+		public Task<Memory<byte>> Minimap(string id, [FromQuery] int scale = 1)
 		{
+			scale = Math.Clamp(scale, 1, 4);
+			return _scarlet.EEMinimap(id, scale).AsTask();
 		}
 
 		[HttpGet("{id}/meta")]
-		public async Task Metadata(string id)
+		public Task Metadata(string id)
 		{
+			return _scarlet.EEMetadata(id).AsTask();
 		}
 
 		[HttpGet("{id}/update")]
