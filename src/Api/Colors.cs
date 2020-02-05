@@ -23,28 +23,8 @@ namespace Scarlet
 		[FieldOffset(2)] public byte G;
 		[FieldOffset(3)] public byte A;
 
-		public static uint ToUInt(ref Rgba32 rgba32)
-		{
-			var value = Unsafe.As<Rgba32, uint>(ref rgba32);
-
-			if (BitConverter.IsLittleEndian)
-			{
-				// reverse endianness
-				Span<byte> source = stackalloc byte[4];
-				Span<byte> target = stackalloc byte[4];
-
-				BinaryPrimitives.WriteUInt32LittleEndian(source, value);
-
-				target[0] = source[3];
-				target[1] = source[2];
-				target[2] = source[1];
-				target[3] = source[0];
-
-				return BitConverter.ToUInt32(target);
-			}
-
-			return value;
-		}
+		public static uint ToUInt32(ref Rgba32 rgba32)
+			=> Unsafe.As<Rgba32, uint>(ref rgba32);
 	}
 
 	public class Colors

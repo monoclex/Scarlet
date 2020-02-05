@@ -283,14 +283,17 @@ namespace Scarlet.Api
 			var offset = 1;
 			zlib[0] = 0;
 
+			var stp = Stopwatch.StartNew();
 			for (var i = 0; i < blocks.Length; i++)
 			{
 				var block = blocks[i];
 				var color = palette[block];
 
-				var rawColor = Rgba32.ToUInt(ref color);
-				var couldWriteColor = BinaryPrimitives.TryWriteUInt32BigEndian(zlib.Slice(offset, sizeof(uint)), rawColor);
-				Debug.Assert(couldWriteColor);
+				var slice = zlib.Slice(offset, sizeof(uint));
+				slice[0] = color.R;
+				slice[1] = color.G;
+				slice[2] = color.B;
+				slice[3] = color.A;
 				offset += 4;
 
 				if (++blocksRead == width)
@@ -316,6 +319,8 @@ namespace Scarlet.Api
 					zlib[offset++] = 0;
 				}
 			}
+			stp.Stop();
+			Console.WriteLine($"Stopwatch ms: {stp.ElapsedMilliseconds}ms, {stp.ElapsedTicks} ticks.");
 
 			// we should've written to the entirety of zlib.
 			// if zlib doesn't perfectly match our length, we've miscalculated

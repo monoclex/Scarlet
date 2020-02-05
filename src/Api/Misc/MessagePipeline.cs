@@ -62,7 +62,13 @@ namespace MessagePipeline
 			});
 
 			// cancel the TCS if the cancellation token expires
-			cancellationToken.Register(tcs.SetCanceled, false);
+			cancellationToken.Register(() =>
+			{
+				if (!tcs.Task.IsCompleted)
+				{
+					tcs.SetCanceled();
+				}
+			}, false);
 
 			return tcs.Task;
 		}

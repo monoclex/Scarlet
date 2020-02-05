@@ -19,7 +19,7 @@ namespace Scarlet.Api.Game.EverybodyEditsUniverse
 		public async ValueTask<GameClient> Obtain()
 		{
 			var client = await GoogleLogin.GetClientFromCookieAsync(_googleCookie).ConfigureAwait(false);
-			
+
 			await client.ConnectAsync().ConfigureAwait(false);
 
 			return new GameClient(client);
