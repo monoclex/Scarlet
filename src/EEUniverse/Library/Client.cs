@@ -148,7 +148,7 @@ namespace EEUniverse.Library
 						stp.Stop();
 						var frequency = System.Diagnostics.Stopwatch.Frequency;
 						var nanosecondsPerTick = (1000L * 1000L * 1000L) / frequency;
-						Console.WriteLine($"Took {(stp.ElapsedTicks * nanosecondsPerTick)}ns ({(stp.ElapsedMilliseconds)}ms, {stp.ElapsedTicks} ticks) to deserialize message '{message.Type.ToString()}'.");
+						Console.WriteLine($"Took {(stp.ElapsedTicks * nanosecondsPerTick)}ns ({(stp.ElapsedMilliseconds)}ms, {stp.ElapsedTicks} ticks) to deserialize message '{message.Type.ToString(message.Scope)}'.");
 #else
 						var message = Serializer.Deserialize(memoryStream);
 #endif

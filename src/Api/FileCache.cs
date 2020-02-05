@@ -95,6 +95,7 @@ namespace Scarlet.Api
 			{
 				try
 				{
+					// TODO: delete cache file if it expired
 					var data = File.ReadAllBytes(cacheFile);
 					return data; /*********** FUNCTION EXIT ************/
 				}

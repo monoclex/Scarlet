@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Scarlet.Api.Misc;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -140,26 +141,41 @@ namespace EEUniverse.Library
 		{
 			// if `leaveOpen` is left false, this will dispose the memory stream once the BitEncodedStreamReader is disposed.
 			// we don't want to dispose the memory stream because we continually reuse it for reading
-			using var stream = new BitEncodedStreamReader(memoryStream, true);
+			var rawBufferData = memoryStream.GetBufferWithReflection().Span;
+			var stream = new BitEncodedSpanReader(rawBufferData);
 			var scope = (ConnectionScope)stream.ReadByte();
 			var type = (MessageType)stream.Read7BitEncodedInt();
 
-			var argData = new List<object>();
-			while (stream.BaseStream.Position < memoryStream.Length)
+			// i have chosen to initialize the list to this mathemetical number,
+			// because i don't want it to go from 4 -> 16 -> 64 ...
+			// and would rather have it start at like 123 if the length is 32 * 123
+			var argData = new List<object>(rawBufferData.Length / 32);
+			while (stream.Position < rawBufferData.Length)
 			{
 				var patternType = stream.ReadByte();
+
+				// it is very common for there to be empty blocks in a world
+				// this is a minor optimization which will try to excersize that
+				while (patternType == _patternBooleanFalse)
+				{
+					argData.Add(false);
+					patternType = stream.ReadByte();
+				}
+
 				switch (patternType)
 				{
-					case _patternString: argData.Add(stream.ReadString()); break;
+					// we can guarantee that this is not possible, because
+					// we ruled it out with the optimization above
+					// case _patternBooleanFalse: argData.Add(false); break;
 					case _patternIntPos: argData.Add(stream.Read7BitEncodedInt()); break;
+					case _patternString: argData.Add(stream.ReadString()); break;
 					case _patternIntNeg: argData.Add(-stream.Read7BitEncodedInt() - 1); break;
-					case _patternDouble: argData.Add(BitConverter.ToDouble(stream.ReadBytes(8), 0)); break;
-					case _patternBooleanFalse: argData.Add(false); break;
 					case _patternBooleanTrue: argData.Add(true); break;
+					case _patternDouble: argData.Add(BitConverter.ToDouble(stream.ReadBytes(8))); break;
 					case _patternBytes:
 					{
 						var length = stream.Read7BitEncodedInt();
-						argData.Add(stream.ReadBytes(length));
+						argData.Add(stream.ReadBytes(length).ToArray());
 					}
 					break;
 
@@ -168,7 +184,7 @@ namespace EEUniverse.Library
 						var objectArgs = new MessageObject();
 						while (stream.ReadByte() != _patternObjectEnd)
 						{
-							stream.BaseStream.Position--;
+							stream.Position--;
 
 							object value;
 							switch (stream.ReadByte())
@@ -176,13 +192,13 @@ namespace EEUniverse.Library
 								case _patternString: value = stream.ReadString(); break;
 								case _patternIntPos: value = stream.Read7BitEncodedInt(); break;
 								case _patternIntNeg: value = -stream.Read7BitEncodedInt() - 1; break;
-								case _patternDouble: value = BitConverter.ToDouble(stream.ReadBytes(8), 0); break;
+								case _patternDouble: value = BitConverter.ToDouble(stream.ReadBytes(8)); break;
 								case _patternBooleanFalse: value = false; break;
 								case _patternBooleanTrue: value = true; break;
 								case _patternBytes:
 								{
 									var length = stream.Read7BitEncodedInt();
-									value = stream.ReadBytes(length);
+									value = stream.ReadBytes(length).ToArray();
 								}
 								break;
 
