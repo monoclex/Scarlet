@@ -27,12 +27,14 @@ namespace Scarlet.Controllers.EverybodyEdits
 		public Task<Memory<byte>> Minimap(string id, [FromQuery] int scale = 1)
 		{
 			scale = Math.Clamp(scale, 1, 4);
+			HttpContext.Response.ContentType = "image/png";
 			return _scarlet.EEMinimap(id, scale).AsTask();
 		}
 
 		[HttpGet("{id}/meta")]
 		public Task Metadata(string id)
 		{
+			HttpContext.Response.ContentType = "application/json";
 			return _scarlet.EEMetadata(id).AsTask();
 		}
 

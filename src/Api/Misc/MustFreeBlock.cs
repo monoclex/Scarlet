@@ -23,6 +23,9 @@ namespace Scarlet.Api.Misc
 			_free();
 		}
 
+		public static implicit operator MustFreeBlock(byte[] block)
+			=> new MustFreeBlock(() => { }, block);
+
 		public static implicit operator MustFreeBlock(Memory<byte> block)
 			=> new MustFreeBlock(() => { }, block);
 

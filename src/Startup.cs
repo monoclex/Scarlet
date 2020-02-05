@@ -20,6 +20,8 @@ namespace Scarlet
 			var eeuClientProvider = new Scarlet.Api.Game.EverybodyEditsUniverse.ClientProvider("");
 			var eeuGameApi = new Scarlet.Api.Game.EverybodyEditsUniverse.ScarletGameApi(eeuClientProvider, eeuColors);
 
+			services.AddSingleton(new ColorsForUnitTesting { EE = eeColors, EEU = eeuColors });
+
 			services.AddSingleton(eeClientProvider);
 			services.AddSingleton(eeGameApi);
 

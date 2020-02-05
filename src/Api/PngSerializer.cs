@@ -111,6 +111,7 @@ namespace Scarlet.Api
 			int zlib_worst_case =
 
 				// 6 bytes overhead for the stream
+				// (2 bytes header, 4 bytes alder32)
 				6 +
 
 				// 5 bytes per 16KiB block
@@ -324,7 +325,7 @@ namespace Scarlet.Api
 			var written = Zlib.Compress(png.Slice(8), zlib);
 
 			// crc32 from the name to the end
-			var crc32 = Crc32.Compute(png.Slice(4, written));
+			var crc32 = Crc32.Compute(png.Slice(4, 4 + written));
 			var couldWriteCrc32 = BinaryPrimitives.TryWriteUInt32BigEndian(png.Slice(8 + written, 4), crc32);
 			Debug.Assert(couldWriteCrc32);
 
@@ -447,26 +448,50 @@ namespace Scarlet.Api
 
 		public static class Zlib
 		{
+			// as we can guarentee the first byte to be 0x78, these values
+			// are precalculated thanks to https://stackoverflow.com/a/43170354
+			private static readonly byte[] _divisbleTable = new byte[]
+			{
+				// Optimal
+				0x9C,
+				// Fastest
+				0x5E,
+				// NoCompression
+				0x01,
+				// <missing>
+				0xDA // probably
+			};
+
+			// https://github.com/SixLabors/ImageSharp/blob/6384f44501014c7c78889444496a2619df82dbb6/src/ImageSharp/Formats/Png/Zlib/ZlibDeflateStream.cs
 			public static int Compress(Span<byte> to, ReadOnlySpan<byte> from)
 			{
-				// zlib header
-				// bytes mean something, idk what
-				to[0] = 0x58;
-				to[1] = 0x85;
-
-				var written = RawCompress(to.Slice(2), from);
-
-				return 2 + written;
-			}
-
-			public static unsafe int RawCompress(Span<byte> to, ReadOnlySpan<byte> from)
-			{
 				// if it's a big image, we don't want to compress as well
+				// we want to get the image out the door faster
 				// TODO: find appropriate number for this
 				var level = to.Length >= 10_000_000
 					? CompressionLevel.Fastest
 					: CompressionLevel.Optimal;
 
+				// zlib header
+				//        v 'deflate' compression
+				//             v 32K look behind window
+				to[0] = 0b0111_1000;
+
+				//               v divisble-ness checksum (filled in)
+				//                     v no dictionary checksum
+				//                       v compression level (filled in)
+				to[1] = _divisbleTable[(int)level];
+
+				var written = RawCompress(to.Slice(2), from, level);
+				var alder32 = Alder32(from);
+
+				BinaryPrimitives.WriteUInt32BigEndian(to.Slice(2 + written, 4), alder32);
+
+				return 2 + written + 4;
+			}
+
+			public static unsafe int RawCompress(Span<byte> to, ReadOnlySpan<byte> from, CompressionLevel level)
+			{
 				int wrote;
 
 				fixed (byte* toPtr = &to[0])
@@ -480,6 +505,21 @@ namespace Scarlet.Api
 				}
 
 				return wrote;
+			}
+
+			// https://gist.github.com/i-e-b/c37cc2d728fe5e5a56205cd7e62d682c
+			public static uint Alder32(ReadOnlySpan<byte> data)
+			{
+				const int mod = 65521;
+				uint a = 1, b = 0;
+
+				foreach (var @byte in data)
+				{
+					a = (a + @byte) % mod;
+					b = (b + a) % mod;
+				}
+
+				return (b << 16) | a;
 			}
 		}
 	}

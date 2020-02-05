@@ -17,6 +17,15 @@ namespace Scarlet.Api
 		{
 			_cacheDirectory = Path.GetFullPath(cacheDirectory);
 			Directory.CreateDirectory(_cacheDirectory);
+
+			// delete all `.lock` files from the last execution
+			foreach (var file in Directory.GetFiles(_cacheDirectory))
+			{
+				if (file.EndsWith(".lock"))
+				{
+					File.Delete(file);
+				}
+			}
 		}
 
 		public FileInfo CacheDirectory => new FileInfo(_cacheDirectory);

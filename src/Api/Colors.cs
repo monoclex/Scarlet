@@ -77,6 +77,7 @@ namespace Scarlet
 				rgba32.R = valueTable.Get<byte>("r");
 				rgba32.G = valueTable.Get<byte>("g");
 				rgba32.B = valueTable.Get<byte>("b");
+				rgba32.A = 255; // default value for A
 
 				if (valueTable.TryGetValue("a", out var alphaObject)
 					&& alphaObject is TomlInt alphaInt)

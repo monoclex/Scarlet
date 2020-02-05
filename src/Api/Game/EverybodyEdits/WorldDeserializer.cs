@@ -18,15 +18,7 @@ namespace Scarlet.Api.Game.EverybodyEdits
 				Debug.Assert(worlddata is DatabaseArray);
 
 				// newer 'worlddata' world
-				try
-				{
-					return DeserializeWorlddata(databaseObject, (DatabaseArray)worlddata, colors);
-				}
-				catch (PlayerIOError e)
-				{
-					Console.WriteLine("e");
-					return default;
-				}
+				return DeserializeWorlddata(databaseObject, (DatabaseArray)worlddata, colors);
 			}
 			else if (databaseObject.TryGetValue("world", out var world))
 			{
@@ -183,7 +175,7 @@ namespace Scarlet.Api.Game.EverybodyEdits
 					var yPosition = y1[i];
 					var index = (yPosition * width) + xPosition;
 
-					if (world[index] != 0)
+					if (world[index] == 0)
 					{
 						world[index] = (ushort)type;
 					}
@@ -201,11 +193,13 @@ namespace Scarlet.Api.Game.EverybodyEdits
 					yConversion[0] = y[i];
 					yConversion[1] = y[i + 1];
 
-					var xPosition = BinaryPrimitives.ReadInt16LittleEndian(xConversion);
-					var yPosition = BinaryPrimitives.ReadInt16LittleEndian(yConversion);
+					var xPosition = BinaryPrimitives.ReadInt16BigEndian(xConversion);
+					var yPosition = BinaryPrimitives.ReadInt16BigEndian(yConversion);
 					var index = (yPosition * width) + xPosition;
 
-					if (world[index] != 0)
+					Debug.Assert(index >= 0 && index < world.Length);
+
+					if (world[index] == 0)
 					{
 						world[index] = (ushort)type;
 					}
