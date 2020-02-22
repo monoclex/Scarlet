@@ -57,7 +57,7 @@ namespace Scarlet.Api.Game.EverybodyEditsUniverse
 				Plays = -1, // should be retrieved thanks to the LoadRooms lobby message
 				Name = initMessage.Get<string>(6),
 				Owner = initMessage.Get<string>(7),
-				BackgroundColor = initMessage.Get<int>(8),
+				BackgroundColor = initMessage.Get<uint>(8),
 				Width = initMessage.Get<int>(9),
 				Height = initMessage.Get<int>(10),
 			};

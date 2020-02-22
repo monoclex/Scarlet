@@ -71,7 +71,7 @@ namespace Scarlet.Api
 			WritePngHeader(png);
 			WriteIHDRChunk(png.Slice(PngHeaderSize, IHDRSize), request.Width, request.Height);
 			WriteTEXTChunk(png.Slice(PngHeaderSize + IHDRSize, TEXTSize));
-			var written = WriteIDATChunk(png.Slice(PngHeaderSize + IHDRSize + TEXTSize), zlib, request.Width, request.Blocks.Span, request.Palette.Span);
+			var written = WriteIDATChunk(png.Slice(PngHeaderSize + IHDRSize + TEXTSize), zlib, request.Width, request.Blocks.Span, request.Palette.Span[0], request.Palette.Span);
 			WriteIENDChunk(png.Slice(PngHeaderSize + IHDRSize + TEXTSize + written, IENDSize));
 
 			var totalSize = PngHeaderSize + IHDRSize + TEXTSize + written + IENDSize;
@@ -257,7 +257,7 @@ namespace Scarlet.Api
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		private static int WriteIDATChunk(Span<byte> png, Span<byte> zlib, int width, Span<ushort> blocks, Span<Rgba32> palette)
+		private static int WriteIDATChunk(Span<byte> png, Span<byte> zlib, int width, Span<ushort> blocks, Rgba32 backgroundColor, Span<Rgba32> palette)
 		{
 			// come back to the length of the chunk later
 			var chunkLength = png.Slice(0, 4);
@@ -273,21 +273,23 @@ namespace Scarlet.Api
 			// section, but we'd have to end up copying the data in the zlib
 			// section back to the png section.
 
-			// a counter for how many blocks have been read.
-			// instead of checking if `i % width == 0`, a counter is increased
-			// and reset when `width` blocks have been read.
-			var blocksRead = 0;
-
-			// the offset really should be 0, but as a micro optimization,
-			// 0x00 is written to `0` and offset is increased to 1.
-			var offset = 1;
-			zlib[0] = 0;
+			var offset = 0;
 
 			var stp = Stopwatch.StartNew();
 			for (var i = 0; i < blocks.Length; i++)
 			{
+				// for every scanline, we need to define the filter method
+				if (i % width == 0)
+				{
+					// http://www.libpng.org/pub/png/spec/1.2/PNG-Chunks.html#C.IDAT
+					// (Note that with filter method 0, the only one currently
+					// defined, this implies prepending a filter-type byte to
+					// each scanline.)
+					zlib[offset++] = 0;
+				}
+
 				var block = blocks[i];
-				var color = palette[block];
+				var color = GetColor(block, palette);
 
 				var slice = zlib.Slice(offset, sizeof(uint));
 				slice[0] = color.R;
@@ -296,27 +298,27 @@ namespace Scarlet.Api
 				slice[3] = color.A;
 				offset += 4;
 
-				if (++blocksRead == width)
+				Rgba32 GetColor(ushort block, Span<Rgba32> palette)
 				{
-					blocksRead = 0;
-
-					Debug.Assert(offset <= zlib.Length);
-
-					if (offset == zlib.Length)
+					if (block >= palette.Length)
 					{
-						// prevent offset from being unfairly incremented
-						// by exiting immediately
-						break;
+						return backgroundColor;
 					}
 
-					// we should be able to write to zlib here, since offset
-					// is not equal to (thus, less than) zlib.Length
-					//
-					// http://www.libpng.org/pub/png/spec/1.2/PNG-Chunks.html#C.IDAT
-					// (Note that with filter method 0, the only one currently
-					// defined, this implies prepending a filter-type byte to
-					// each scanline.)
-					zlib[offset++] = 0;
+					var color = palette[block];
+
+					if (block == 0)
+					{
+						Console.WriteLine("ok");
+					}
+
+					// if it's default(Rgba32), that means it doesn't have a color
+					if (Rgba32.ToUInt32(ref color) == 0)
+					{
+						return backgroundColor;
+					}
+
+					return color;
 				}
 			}
 			stp.Stop();
@@ -458,7 +460,7 @@ namespace Scarlet.Api
 			private static readonly byte[] _divisbleTable = new byte[]
 			{
 				// Optimal
-				0x9C,
+				0x5E, // 0x9E,
 				// Fastest
 				0x5E,
 				// NoCompression
@@ -497,19 +499,15 @@ namespace Scarlet.Api
 
 			public static unsafe int RawCompress(Span<byte> to, ReadOnlySpan<byte> from, CompressionLevel level)
 			{
-				int wrote;
-
 				fixed (byte* toPtr = &to[0])
 				{
-					using var unmanagedMemoryStream = new UnmanagedMemoryStream(toPtr, 0, to.Length, FileAccess.ReadWrite);
+					using var unmanagedMemoryStream = new UnmanagedMemoryStream(toPtr, to.Length, to.Length, FileAccess.ReadWrite);
 					using var deflateStream = new DeflateStream(unmanagedMemoryStream, level);
 					deflateStream.Write(from);
 					deflateStream.Flush();
 					unmanagedMemoryStream.Flush();
-					wrote = (int)unmanagedMemoryStream.Position;
+					return (int)unmanagedMemoryStream.Position;
 				}
-
-				return wrote;
 			}
 
 			// https://gist.github.com/i-e-b/c37cc2d728fe5e5a56205cd7e62d682c

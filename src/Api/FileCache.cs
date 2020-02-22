@@ -82,10 +82,28 @@ namespace Scarlet.Api
 
 		public async ValueTask<Memory<byte>> TryRead(string cacheKey, Func<ValueTask<MustFreeBlock>> compute)
 		{
+			var failures = -1;
 			var cacheFile = GetCacheFile(cacheKey);
 			var lockFile = GetLockFile(cacheFile);
 
 		RETRY: /*********** RETRY ENTRY ************/
+			failures++;
+
+			if (failures >= 10)
+			{
+				// bad
+				// TODO: log warning
+				Memory<byte> copied;
+
+				using (var computed = await compute().ConfigureAwait(false))
+				{
+					copied = new byte[computed.Memory.Length];
+					computed.Memory.CopyTo(copied);
+				}
+
+				return copied;
+			}
+
 			if (IsLock(lockFile))
 			{
 				await WaitForFileDeletion(lockFile).ConfigureAwait(false);

@@ -19,6 +19,13 @@ namespace Scarlet.Api.Game.EverybodyEdits
 			var client = await _clientProvider.Obtain().ConfigureAwait(false);
 			var world = await client.DownloadWorld(worldId).ConfigureAwait(false);
 
+			// a PngSerializer hack/workaround is for the first color in the palette to be
+			// the world background.
+			// TODO: make PngSerializer support a background color
+			var colors = new Rgba32[_colors.Values.Length];
+			_colors.Values.CopyTo(colors);
+			colors[0] = Rgba32.FromARGB(world.BackgroundColor);
+
 			// TODO: if there is a background color, copy the colors and modify
 			// the first color (0) to be the background color.
 
@@ -29,7 +36,7 @@ namespace Scarlet.Api.Game.EverybodyEdits
 					Width = world.Width,
 					Height = world.Height,
 					Blocks = world.WorldData,
-					Palette = _colors.Values
+					Palette = colors
 				},
 				Metadata = JsonSerializer.SerializeToUtf8Bytes(world)
 			};

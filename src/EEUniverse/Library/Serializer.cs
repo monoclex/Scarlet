@@ -159,6 +159,8 @@ namespace EEUniverse.Library
 				while (patternType == _patternBooleanFalse)
 				{
 					argData.Add(false);
+
+					if (stream.Position >= rawBufferData.Length) goto EndOfFunction;
 					patternType = stream.ReadByte();
 				}
 
@@ -216,6 +218,7 @@ namespace EEUniverse.Library
 				}
 			}
 
+			EndOfFunction:
 			return new Message(scope, type, argData.ToArray());
 		}
 	}

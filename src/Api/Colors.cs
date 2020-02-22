@@ -23,6 +23,15 @@ namespace Scarlet
 		[FieldOffset(2)] public byte G;
 		[FieldOffset(3)] public byte A;
 
+		public static Rgba32 FromARGB(uint color)
+			=> new Rgba32
+			{
+				A = (byte)(color >> 24),
+				R = (byte)((color >> 16) & 0b11111111),
+				G = (byte)((color >> 8) & 0b11111111),
+				B = (byte)(color & 0b11111111),
+			};
+
 		public static uint ToUInt32(ref Rgba32 rgba32)
 			=> Unsafe.As<Rgba32, uint>(ref rgba32);
 	}
