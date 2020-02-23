@@ -10,7 +10,7 @@ namespace Scarlet.Api.Game.EverybodyEditsUniverse
 	{
 		public int Plays { get; set; }
 		public string Owner { get; set; }
-		public uint BackgroundColor { get; set; }
+		public int BackgroundColor { get; set; }
 		public int Width { get; set; }
 		public int Height { get; set; }
 		public string Name { get; set; }

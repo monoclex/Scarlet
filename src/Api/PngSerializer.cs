@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 
 namespace Scarlet.Api
@@ -275,7 +276,6 @@ namespace Scarlet.Api
 
 			var offset = 0;
 
-			var stp = Stopwatch.StartNew();
 			for (var i = 0; i < blocks.Length; i++)
 			{
 				// for every scanline, we need to define the filter method
@@ -307,11 +307,6 @@ namespace Scarlet.Api
 
 					var color = palette[block];
 
-					if (block == 0)
-					{
-						Console.WriteLine("ok");
-					}
-
 					// if it's default(Rgba32), that means it doesn't have a color
 					if (Rgba32.ToUInt32(ref color) == 0)
 					{
@@ -321,8 +316,6 @@ namespace Scarlet.Api
 					return color;
 				}
 			}
-			stp.Stop();
-			Console.WriteLine($"Stopwatch ms: {stp.ElapsedMilliseconds}ms, {stp.ElapsedTicks} ticks.");
 
 			// we should've written to the entirety of zlib.
 			// if zlib doesn't perfectly match our length, we've miscalculated
@@ -330,7 +323,6 @@ namespace Scarlet.Api
 			Debug.Assert(offset == zlib.Length);
 
 			var written = Zlib.Compress(png.Slice(8), zlib);
-
 			// crc32 from the name to the end
 			var crc32 = Crc32.Compute(png.Slice(4, 4 + written));
 			var couldWriteCrc32 = BinaryPrimitives.TryWriteUInt32BigEndian(png.Slice(8 + written, 4), crc32);
@@ -455,21 +447,6 @@ namespace Scarlet.Api
 
 		public static class Zlib
 		{
-			// as we can guarentee the first byte to be 0x78, these values
-			// are precalculated thanks to https://stackoverflow.com/a/43170354
-			private static readonly byte[] _divisbleTable = new byte[]
-			{
-				// Optimal
-				0x5E, // 0x9E,
-				// Fastest
-				0x5E,
-				// NoCompression
-				0x01,
-				// <missing>
-				0xDA // probably
-			};
-
-			// https://github.com/SixLabors/ImageSharp/blob/6384f44501014c7c78889444496a2619df82dbb6/src/ImageSharp/Formats/Png/Zlib/ZlibDeflateStream.cs
 			public static int Compress(Span<byte> to, ReadOnlySpan<byte> from)
 			{
 				// if it's a big image, we don't want to compress as well
@@ -479,35 +456,48 @@ namespace Scarlet.Api
 					? CompressionLevel.Fastest
 					: CompressionLevel.Optimal;
 
-				// zlib header
-				//        v 'deflate' compression
-				//             v 32K look behind window
-				to[0] = 0b0111_1000;
-
-				//               v divisble-ness checksum (filled in)
-				//                     v no dictionary checksum
-				//                       v compression level (filled in)
-				to[1] = _divisbleTable[(int)level];
-
-				var written = RawCompress(to.Slice(2), from, level);
-				var alder32 = Alder32(from);
-
-				BinaryPrimitives.WriteUInt32BigEndian(to.Slice(2 + written, 4), alder32);
-
-				return 2 + written + 4;
+				// TODO: these are easily multi threadable for large workloads
+				var written = ExternalZlibCompress(to, from, level);
+				return written;
 			}
 
-			public static unsafe int RawCompress(Span<byte> to, ReadOnlySpan<byte> from, CompressionLevel level)
+			public static unsafe int ExternalZlibCompress(Span<byte> to, ReadOnlySpan<byte> from, CompressionLevel level)
 			{
-				fixed (byte* toPtr = &to[0])
+				int compressionLevel =
+					level == CompressionLevel.NoCompression
+					? 0
+					: level == CompressionLevel.Fastest
+						? 6
+						: 9;
+
+				fixed (byte* dstPtr = &to[0])
+				fixed (byte* srcPtr = &from[0])
 				{
-					using var unmanagedMemoryStream = new UnmanagedMemoryStream(toPtr, to.Length, to.Length, FileAccess.ReadWrite);
-					using var deflateStream = new DeflateStream(unmanagedMemoryStream, level);
-					deflateStream.Write(from);
-					deflateStream.Flush();
-					unmanagedMemoryStream.Flush();
-					return (int)unmanagedMemoryStream.Position;
+					var result = External.zlib_compress_stream(dstPtr, (uint)to.Length, srcPtr, (uint)from.Length, compressionLevel);
+
+					Debug.Assert(result.Result == 0); // MZ_OK
+					return (int)result.Written;
 				}
+			}
+
+			private static class External
+			{
+				[StructLayout(LayoutKind.Explicit)]
+				public struct CompressionResult
+				{
+					[FieldOffset(0)] public int Result;
+					[FieldOffset(4)] public uint Written;
+				}
+
+				[DllImport("lib", CallingConvention = CallingConvention.Cdecl)]
+				public static extern unsafe CompressionResult zlib_compress_stream
+				(
+					byte* destination,
+					uint destination_length,
+					byte* source,
+					uint source_length,
+					int compression_level
+				);
 			}
 
 			// https://gist.github.com/i-e-b/c37cc2d728fe5e5a56205cd7e62d682c

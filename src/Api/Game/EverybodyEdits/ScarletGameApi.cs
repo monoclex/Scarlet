@@ -24,7 +24,12 @@ namespace Scarlet.Api.Game.EverybodyEdits
 			// TODO: make PngSerializer support a background color
 			var colors = new Rgba32[_colors.Values.Length];
 			_colors.Values.CopyTo(colors);
-			colors[0] = Rgba32.FromARGB(world.BackgroundColor);
+
+			if (world.BackgroundColor != 0)
+			{
+				colors[0] = Rgba32.FromARGB(world.BackgroundColor);
+				colors[0].A = 255;
+			}
 
 			// TODO: if there is a background color, copy the colors and modify
 			// the first color (0) to be the background color.
