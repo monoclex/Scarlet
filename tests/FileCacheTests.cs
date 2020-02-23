@@ -1,7 +1,7 @@
 using FluentAssertions;
 
 using Scarlet.Api;
-
+using Scarlet.Api.Misc;
 using System;
 using System.IO;
 using System.Text;
@@ -48,7 +48,7 @@ namespace Scarlet.Tests
 
 			var taskStarted = false;
 			var taskStopped = false;
-			Memory<byte> result = default;
+			OwnedMemory result = default;
 
 			// we have created a lock file - let's start up a request for the cache entry
 			var task = Task.Run(async () =>
@@ -75,7 +75,7 @@ namespace Scarlet.Tests
 			SpinWait.SpinUntil(() => taskStopped);
 
 			// make sure the result has "Hello, World!"
-			var bytes = result.ToArray();
+			var bytes = result.Memory.ToArray();
 			bytes.Should().BeEquivalentTo(Encoding.ASCII.GetBytes("Hello, World!" + Environment.NewLine));
 		}
 
@@ -143,7 +143,7 @@ namespace Scarlet.Tests
 			_counter.Should().Be(1);
 
 			// asserting that both results are the same
-			result.Length.Should().Be(result2.Length);
+			result.Memory.Length.Should().Be(result2.Memory.Length);
 		}
 
 		#endregion WhenEntryRequested_ThenAComputationOccurs_OnlyOnce
