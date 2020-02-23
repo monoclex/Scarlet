@@ -12,9 +12,9 @@ namespace Scarlet.Api.Game.EverybodyEdits
 	{
 		private readonly Colors _everybodyEditsColors;
 
-		public ClientProvider(Colors everybodyEditsColors)
+		public ClientProvider(ColorsConfiguration colors)
 		{
-			_everybodyEditsColors = everybodyEditsColors;
+			_everybodyEditsColors = colors.EE;
 		}
 
 		private static SemaphoreSlim _lock = new SemaphoreSlim(1, 1);

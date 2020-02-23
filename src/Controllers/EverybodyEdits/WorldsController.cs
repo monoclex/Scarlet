@@ -11,12 +11,12 @@ namespace Scarlet.Controllers.EverybodyEdits
 	public class WorldsController : Controller
 	{
 		private readonly ILogger<WorldsController> _logger;
-		private readonly ScarletApi _scarlet;
+		private readonly IEEScarletApi _scarlet;
 
 		public WorldsController
 		(
 			ILogger<WorldsController> logger,
-			ScarletApi scarlet
+			IEEScarletApi scarlet
 		)
 		{
 			_logger = logger;
@@ -26,22 +26,22 @@ namespace Scarlet.Controllers.EverybodyEdits
 		[HttpGet("{id}")]
 		public Task<Memory<byte>> Minimap(string id, [FromQuery] int scale = 1)
 		{
-			scale = Math.Clamp(scale, 1, 4);
+			scale = Config.ClampToScale(scale);
 			HttpContext.Response.ContentType = "image/png";
-			return _scarlet.EEMinimap(id, scale).AsTask();
+			return _scarlet.GetMinimap(id, scale).AsTask();
 		}
 
 		[HttpGet("{id}/meta")]
 		public Task<Memory<byte>> Metadata(string id)
 		{
 			HttpContext.Response.ContentType = "application/json";
-			return _scarlet.EEMetadata(id).AsTask();
+			return _scarlet.GetMetadata(id).AsTask();
 		}
 
 		[HttpGet("{id}/update")]
 		public async Task<object> Update(string id)
 		{
-			_scarlet.EEUpdate(id);
+			_scarlet.Update(id);
 
 			return new
 			{

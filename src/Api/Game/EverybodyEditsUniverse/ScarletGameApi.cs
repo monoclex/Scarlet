@@ -6,15 +6,15 @@ using System.Threading.Tasks;
 
 namespace Scarlet.Api.Game.EverybodyEditsUniverse
 {
-	public class ScarletGameApi : IScarletGameApi
+	public class ScarletGameApi : IEEUScarletGameApi
 	{
 		private readonly ClientProvider _clientProvider;
 		private readonly Colors _colors;
 
-		public ScarletGameApi(ClientProvider clientProvider, Colors everybodyEditsUniverseColors)
+		public ScarletGameApi(ClientProvider clientProvider, ColorsConfiguration colors)
 		{
 			_clientProvider = clientProvider;
-			_colors = everybodyEditsUniverseColors;
+			_colors = colors.EEU;
 		}
 
 		public async ValueTask<ScarletGameWorld> World(string worldId)

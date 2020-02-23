@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Scarlet.Api;
+using Scarlet.Api.Game;
 using System.Net;
 
 namespace Scarlet
@@ -21,27 +22,23 @@ namespace Scarlet
 		// For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
 		public void ConfigureServices(IServiceCollection services)
 		{
-			var eeColors = Colors.FromFile("colors-ee.toml");
-			var eeClientProvider = new Scarlet.Api.Game.EverybodyEdits.ClientProvider(eeColors);
-			var eeGameApi = new Scarlet.Api.Game.EverybodyEdits.ScarletGameApi(eeColors, eeClientProvider);
+			services.AddSingleton(new FileCache("cache", System.TimeSpan.FromMinutes(1)));
 
-			var eeuColors = Colors.FromFile("colors-eeu.toml");
-			var eeuClientProvider = new Scarlet.Api.Game.EverybodyEditsUniverse.ClientProvider(_configuration["GoogleLoginToken"]);
-			var eeuGameApi = new Scarlet.Api.Game.EverybodyEditsUniverse.ScarletGameApi(eeuClientProvider, eeuColors);
+			// TODO: Use ASP Net Core configuration stuff
+			services.AddSingleton(new ColorsConfiguration
+			{
+				EE = Colors.FromFile(_configuration["ColorFiles:EE"]),
+				EEU = Colors.FromFile(_configuration["ColorFiles:EEU"])
+			});
 
-			services.AddSingleton(new ColorsForUnitTesting { EE = eeColors, EEU = eeuColors });
+			services.AddSingleton<Api.Game.EverybodyEdits.ClientProvider>();
+			services.AddSingleton<IEEScarletGameApi, Api.Game.EverybodyEdits.ScarletGameApi>();
 
-			services.AddSingleton(eeClientProvider);
-			services.AddSingleton(eeGameApi);
+			services.AddSingleton(new Api.Game.EverybodyEditsUniverse.ClientProvider(_configuration["GoogleLoginToken"]));
+			services.AddSingleton<IEEUScarletGameApi, Api.Game.EverybodyEditsUniverse.ScarletGameApi>();
 
-			services.AddSingleton(eeuClientProvider);
-			services.AddSingleton(eeuGameApi);
-
-			var cache = new FileCache("cache", System.TimeSpan.FromMinutes(1));
-			services.AddSingleton(cache);
-
-			var scarlet = new ScarletApi(cache, eeGameApi, eeuGameApi);
-			services.AddSingleton(scarlet);
+			services.AddSingleton<IEEScarletApi, ScarletApi>(provider => new ScarletApi(provider.GetRequiredService<FileCache>(), "ee", provider.GetRequiredService<IEEScarletGameApi>()));
+			services.AddSingleton<IEEUScarletApi, ScarletApi>(provider => new ScarletApi(provider.GetRequiredService<FileCache>(), "eeu", provider.GetRequiredService<IEEUScarletGameApi>()));
 
 			services.AddMvc(options =>
 			{

@@ -12,95 +12,64 @@ namespace Scarlet.Api
 	/// <summary>
 	/// Represents the main way of accessing the Scarlet API, internally.
 	/// </summary>
-	public class ScarletApi
+	public class ScarletApi : IEEScarletApi, IEEUScarletApi
 	{
 		// TODO: fill with stuff
 		private readonly FileCache _cache;
-		private readonly IScarletGameApi _everybodyEdits;
-		private readonly IScarletGameApi _everybodyEditsUniverse;
+		private readonly IScarletGameApi _api;
+		private readonly string _apiKey;
 
 		public ScarletApi
 		(
 			FileCache cache,
-			IScarletGameApi everybodyEdits,
-			IScarletGameApi everybodyEditsUniverse
+			string apiKey,
+			IScarletGameApi api
 		)
 		{
 			_cache = cache;
-			_everybodyEdits = everybodyEdits;
-			_everybodyEditsUniverse = everybodyEditsUniverse;
+			_apiKey = apiKey;
+			_api = api;
 		}
 
 		// TODO: figure out a clean way to take the results of an
 		// IScarletGameApi and store them effectively and retrieve them.
-		public ValueTask<Memory<byte>> EEMinimap(string worldId, int scale = 1)
+		public ValueTask<Memory<byte>> GetMinimap(string worldId, int scale = 1)
 		{
-			return _cache.TryRead($"ee.[{worldId}].minimap.[{scale}]", async () =>
+			return _cache.TryRead($"{_apiKey}.[{worldId}].minimap.[{scale}]", async () =>
 			{
-				var world = await GetWorld($"ee.[{worldId}]", _everybodyEdits, worldId).ConfigureAwait(false);
+				var world = await GetWorld($"{_apiKey}.[{worldId}]", worldId).ConfigureAwait(false);
 
 				world.SerializeRequest.Scale = scale;
 				return PngSerializer.Serialize(world.SerializeRequest);
 			});
 		}
 
-		public ValueTask<Memory<byte>> EEMetadata(string worldId)
+		public ValueTask<Memory<byte>> GetMetadata(string worldId)
 		{
-			return _cache.TryRead($"ee.[{worldId}].metadata", async () =>
+			return _cache.TryRead($"{_apiKey}.[{worldId}].metadata", async () =>
 			{
-				var world = await GetWorld($"ee.[{worldId}]", _everybodyEdits, worldId).ConfigureAwait(false);
+				var world = await GetWorld($"{_apiKey}.[{worldId}]", worldId).ConfigureAwait(false);
 				return world.Metadata;
 			});
 		}
 
-		public void EEUpdate(string worldId)
+		public void Update(string worldId)
 		{
-			_cache.Age($"ee.[{worldId}]");
-			_cache.Age($"ee.[{worldId}].metadata");
+			_cache.Age($"{_apiKey}.[{worldId}]");
+			_cache.Age($"{_apiKey}.[{worldId}].metadata");
 
 			foreach (var i in Config.EnumerateScale)
 			{
-				_cache.Age($"ee.[{worldId}].minimap.[{i}]");
+				_cache.Age($"{_apiKey}.[{worldId}].minimap.[{i}]");
 			}
 		}
 
-		public ValueTask<Memory<byte>> EEUMinimap(string worldId, int scale = 1)
-		{
-			return _cache.TryRead($"eeu.[{worldId}].minimap.[{scale}]", async () =>
-			{
-				var world = await GetWorld($"eeu.[{worldId}]", _everybodyEditsUniverse, worldId).ConfigureAwait(false);
-
-				world.SerializeRequest.Scale = scale;
-				return PngSerializer.Serialize(world.SerializeRequest);
-			});
-		}
-
-		public ValueTask<Memory<byte>> EEUMetadata(string worldId)
-		{
-			return _cache.TryRead($"eeu.[{worldId}].metadata", async () =>
-			{
-				var world = await GetWorld($"eeu.[{worldId}]", _everybodyEditsUniverse, worldId).ConfigureAwait(false);
-				return world.Metadata;
-			});
-		}
-
-		public void EEUUpdate(string worldId)
-		{
-			_cache.Age($"eeu.[{worldId}]");
-			_cache.Age($"eeu.[{worldId}].metadata");
-
-			foreach (var i in Config.EnumerateScale)
-			{
-				_cache.Age($"eeu.[{worldId}].minimap.[{i}]");
-			}
-		}
-
-		private async ValueTask<ScarletGameWorld> GetWorld(string cacheKey, IScarletGameApi gameApi, string worldId)
+		private async ValueTask<ScarletGameWorld> GetWorld(string cacheKey, string worldId)
 		{
 			var result = await _cache.TryRead(cacheKey, async () =>
 			{
 				// TODO: seperate out serialization logic from ScarletApi
-				var world = await gameApi.World(worldId).ConfigureAwait(false);
+				var world = await _api.World(worldId).ConfigureAwait(false);
 
 				var blocksSize = sizeof(ushort) * world.SerializeRequest.Blocks.Length;
 				var rgba32Size = Rgba32.Size * world.SerializeRequest.Palette.Length;

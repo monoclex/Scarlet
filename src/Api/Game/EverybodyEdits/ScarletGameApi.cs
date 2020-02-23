@@ -3,14 +3,14 @@ using System.Threading.Tasks;
 
 namespace Scarlet.Api.Game.EverybodyEdits
 {
-	public class ScarletGameApi : IScarletGameApi
+	public class ScarletGameApi : IEEScarletGameApi
 	{
 		private readonly Colors _colors;
 		private readonly ClientProvider _clientProvider;
 
-		public ScarletGameApi(Colors everybodyEditsColors, ClientProvider clientProvider)
+		public ScarletGameApi(ColorsConfiguration colors, ClientProvider clientProvider)
 		{
-			_colors = everybodyEditsColors;
+			_colors = colors.EE;
 			_clientProvider = clientProvider;
 		}
 
