@@ -15,6 +15,8 @@ namespace Scarlet.Api.Misc
 
 		public Memory<byte> Memory => _block;
 
+		public Span<byte> Span => _block.Span;
+
 		public void Dispose()
 		{
 			_free();

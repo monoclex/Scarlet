@@ -1,10 +1,13 @@
 using FluentAssertions;
+
 using Scarlet.Api;
+
 using System;
 using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Xunit;
 
 namespace Scarlet.Tests
@@ -12,6 +15,7 @@ namespace Scarlet.Tests
 	public sealed class FileCacheTests : IDisposable
 	{
 		private readonly FileCache _cache;
+
 		public FileCacheTests() => _cache = new FileCache(Guid.NewGuid().ToString());
 
 		public void Dispose()
@@ -22,6 +26,7 @@ namespace Scarlet.Tests
 		}
 
 		#region WhenLockIsPresent_CacheWaitsUntilLockIsGone_ToReadCachedData
+
 		[Fact]
 		public async Task WhenLockIsPresent_CacheWaitsUntilLockIsGone_ToReadCachedData()
 		{
@@ -73,9 +78,11 @@ namespace Scarlet.Tests
 			var bytes = result.ToArray();
 			bytes.Should().BeEquivalentTo(Encoding.ASCII.GetBytes("Hello, World!" + Environment.NewLine));
 		}
-		#endregion
+
+		#endregion WhenLockIsPresent_CacheWaitsUntilLockIsGone_ToReadCachedData
 
 		#region WhenCacheCreated_CacheDirectoryIsCreated_IfNotExist
+
 		private string GetDirectoryThatDoesntExist()
 		{
 			string name = null;
@@ -102,9 +109,11 @@ namespace Scarlet.Tests
 			// after the cache has been created, if the directory previously did not exist, it should now
 			Directory.Exists(directory).Should().BeTrue();
 		}
-		#endregion
+
+		#endregion WhenCacheCreated_CacheDirectoryIsCreated_IfNotExist
 
 		#region WhenEntryRequested_ThenAComputationOccurs_OnlyOnce
+
 		private int _counter;
 
 		private async ValueTask<Api.Misc.OwnedMemory> Compute()
@@ -136,6 +145,7 @@ namespace Scarlet.Tests
 			// asserting that both results are the same
 			result.Length.Should().Be(result2.Length);
 		}
-		#endregion
+
+		#endregion WhenEntryRequested_ThenAComputationOccurs_OnlyOnce
 	}
 }

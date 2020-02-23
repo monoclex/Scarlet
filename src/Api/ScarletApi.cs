@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Scarlet.Api.Misc;
+
+using System;
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -26,7 +28,7 @@ namespace Scarlet.Api
 			_api = api;
 		}
 
-		public ValueTask<Memory<byte>> GetMinimap(string worldId, int scale = 1)
+		public ValueTask<OwnedMemory> GetMinimap(string worldId, int scale = 1)
 		{
 			return _cache.TryRead($"{_apiKey}.[{worldId}].minimap.[{scale}]", async () =>
 			{
@@ -37,7 +39,7 @@ namespace Scarlet.Api
 			});
 		}
 
-		public ValueTask<Memory<byte>> GetMetadata(string worldId)
+		public ValueTask<OwnedMemory> GetMetadata(string worldId)
 		{
 			return _cache.TryRead($"{_apiKey}.[{worldId}].metadata", async () =>
 			{

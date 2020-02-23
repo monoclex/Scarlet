@@ -2,8 +2,8 @@
 using Microsoft.Extensions.Logging;
 
 using Scarlet.Api;
+using Scarlet.Api.Misc;
 
-using System;
 using System.Threading.Tasks;
 
 namespace Scarlet.Controllers.EverybodyEditsEverybodyEditsUniverse
@@ -26,7 +26,7 @@ namespace Scarlet.Controllers.EverybodyEditsEverybodyEditsUniverse
 		}
 
 		[HttpGet("{id}")]
-		public Task<Memory<byte>> Minimap(string id, [FromQuery] int scale = 1)
+		public Task<OwnedMemory> Minimap(string id, [FromQuery] int scale = 1)
 		{
 			scale = Config.ClampToScale(scale);
 			HttpContext.Response.ContentType = "image/png";
@@ -34,7 +34,7 @@ namespace Scarlet.Controllers.EverybodyEditsEverybodyEditsUniverse
 		}
 
 		[HttpGet("{id}/meta")]
-		public Task<Memory<byte>> Metadata(string id)
+		public Task<OwnedMemory> Metadata(string id)
 		{
 			HttpContext.Response.ContentType = "application/json";
 			return _scarlet.GetMetadata(id).AsTask();

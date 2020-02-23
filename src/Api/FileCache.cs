@@ -19,6 +19,11 @@ namespace Scarlet.Api
 		private readonly TimeSpan _timeToExpire;
 		private readonly ILogger<FileCache> _logger;
 
+		public FileCache(string cacheDirectory)
+			: this(cacheDirectory, TimeSpan.FromDays(1))
+		{
+		}
+
 		public FileCache(string cacheDirectory, TimeSpan timeToExpire)
 			: this(NullLogger<FileCache>.Instance, cacheDirectory, timeToExpire)
 		{
@@ -110,7 +115,7 @@ namespace Scarlet.Api
 			return lifetime > _timeToExpire;
 		}
 
-		public async ValueTask<Memory<byte>> TryRead(string cacheKey, Func<ValueTask<OwnedMemory>> compute)
+		public async ValueTask<OwnedMemory> TryRead(string cacheKey, Func<ValueTask<OwnedMemory>> compute)
 		{
 			var failures = -1;
 			var cacheFile = GetCacheFile(cacheKey);
@@ -123,15 +128,7 @@ namespace Scarlet.Api
 			{
 				_logger.LogWarning("Failed more than 10 times while attempting to read '{0}' located at {1}", cacheKey, cacheFile);
 
-				Memory<byte> copied;
-
-				using (var computed = await compute().ConfigureAwait(false))
-				{
-					copied = new byte[computed.Memory.Length];
-					computed.Memory.CopyTo(copied);
-				}
-
-				return copied;
+				return await compute().ConfigureAwait(false);
 			}
 
 			if (IsLock(lockFile))
@@ -192,10 +189,7 @@ namespace Scarlet.Api
 						ReleaseLock(lockFile);
 					}
 
-					// TODO: don't new up arrays, make use of MustFreeBlock in all consuming code
-					var copy = new byte[result.Memory.Length];
-					result.Memory.CopyTo(copy);
-					return copy; /*********** FUNCTION EXIT ************/
+					return result; /*********** FUNCTION EXIT ************/
 				}
 				catch (Exception)
 				{

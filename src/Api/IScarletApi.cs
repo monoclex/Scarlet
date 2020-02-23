@@ -1,13 +1,14 @@
-﻿using System;
+﻿using Scarlet.Api.Misc;
+
 using System.Threading.Tasks;
 
 namespace Scarlet.Api
 {
 	public interface IScarletApi
 	{
-		ValueTask<Memory<byte>> GetMetadata(string worldId);
+		ValueTask<OwnedMemory> GetMetadata(string worldId);
 
-		ValueTask<Memory<byte>> GetMinimap(string worldId, int scale = 1);
+		ValueTask<OwnedMemory> GetMinimap(string worldId, int scale = 1);
 
 		void Update(string worldId);
 	}

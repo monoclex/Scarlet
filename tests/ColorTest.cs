@@ -1,7 +1,12 @@
 ﻿using FluentAssertions;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+
+using Scarlet.Api;
+
 using System.Collections.Generic;
+
 using Xunit;
 
 namespace Scarlet.Tests
@@ -23,7 +28,7 @@ namespace Scarlet.Tests
 			startup.ConfigureServices(serviceBuilder);
 
 			var colors = serviceBuilder.BuildServiceProvider()
-				.GetRequiredService<ColorsForUnitTesting>();
+				.GetRequiredService<ColorsConfiguration>();
 
 			_ee = colors.EE;
 			_eeu = colors.EEU;
