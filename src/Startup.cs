@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+
 using Scarlet.Api;
 using Scarlet.Api.Game;
-using System.Net;
 
 namespace Scarlet
 {
@@ -24,7 +24,7 @@ namespace Scarlet
 		{
 			services.AddSingleton(new FileCache("cache", System.TimeSpan.FromMinutes(1)));
 
-			// TODO: Use ASP Net Core configuration stuff
+			// TODO: use ASP Net Core configuration stuff
 			services.AddSingleton(new ColorsConfiguration
 			{
 				EE = Colors.FromFile(_configuration["ColorFiles:EE"]),

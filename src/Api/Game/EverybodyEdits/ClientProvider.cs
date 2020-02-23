@@ -18,7 +18,8 @@ namespace Scarlet.Api.Game.EverybodyEdits
 		}
 
 		private static SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
-		private static Client _lifetimeClient = null;
+		private static Client _lifetimeClient;
+		private static GameClient _gameClient;
 
 		public async ValueTask<GameClient> Obtain()
 		{
@@ -26,12 +27,12 @@ namespace Scarlet.Api.Game.EverybodyEdits
 
 			try
 			{
-				// TODO: don't constantly new up a GameClient
-				if (_lifetimeClient != null) return new GameClient(_lifetimeClient, _everybodyEditsColors);
+				if (_lifetimeClient != null && _gameClient != null) return _gameClient;
 
 				_lifetimeClient = PlayerIO.Connect("everybody-edits-su9rn58o40itdbnw69plyw", "public", "user", "", "");
 
-				return new GameClient(_lifetimeClient, _everybodyEditsColors);
+				_gameClient = new GameClient(_lifetimeClient, _everybodyEditsColors);
+				return _gameClient;
 			}
 			finally
 			{

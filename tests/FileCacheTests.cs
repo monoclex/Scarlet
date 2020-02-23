@@ -107,7 +107,7 @@ namespace Scarlet.Tests
 		#region WhenEntryRequested_ThenAComputationOccurs_OnlyOnce
 		private int _counter;
 
-		private async ValueTask<Api.Misc.MustFreeBlock> Compute()
+		private async ValueTask<Api.Misc.OwnedMemory> Compute()
 		{
 			Interlocked.Increment(ref _counter);
 			await Task.Delay(10).ConfigureAwait(false);

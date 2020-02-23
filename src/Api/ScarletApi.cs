@@ -1,11 +1,7 @@
 ﻿using System;
 using System.Buffers.Binary;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using Scarlet.Api.Game;
 
 namespace Scarlet.Api
 {
@@ -14,7 +10,6 @@ namespace Scarlet.Api
 	/// </summary>
 	public class ScarletApi : IEEScarletApi, IEEUScarletApi
 	{
-		// TODO: fill with stuff
 		private readonly FileCache _cache;
 		private readonly IScarletGameApi _api;
 		private readonly string _apiKey;
@@ -31,8 +26,6 @@ namespace Scarlet.Api
 			_api = api;
 		}
 
-		// TODO: figure out a clean way to take the results of an
-		// IScarletGameApi and store them effectively and retrieve them.
 		public ValueTask<Memory<byte>> GetMinimap(string worldId, int scale = 1)
 		{
 			return _cache.TryRead($"{_apiKey}.[{worldId}].minimap.[{scale}]", async () =>

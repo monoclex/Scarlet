@@ -1,4 +1,5 @@
 ﻿using Scarlet.Api.Misc;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -218,7 +219,7 @@ namespace EEUniverse.Library
 				}
 			}
 
-			EndOfFunction:
+		EndOfFunction:
 			return new Message(scope, type, argData.ToArray());
 		}
 	}

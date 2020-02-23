@@ -1,8 +1,6 @@
 ﻿using PlayerIOClient;
-using System;
-using System.Collections.Generic;
+
 using System.Diagnostics;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Scarlet.Api.Game.EverybodyEdits
@@ -42,7 +40,7 @@ namespace Scarlet.Api.Game.EverybodyEdits
 					HideLobby = Get<bool>("HideLobby"),
 					MinimapEnabled = Get("MinimapEnabled", true),
 					AllowPotions = Get<bool>("allowpotions"),
-					BackgroundColor = Get("backgroundColor", 0xFF000000), // TODO: nicer format
+					BackgroundColor = Get("backgroundColor", 0xFF000000),
 
 					// last so that way if any of the above fails, the pain of
 					// deserialization is not performed

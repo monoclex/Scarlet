@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+
 using Scarlet.Api;
+
 using System;
 using System.Threading.Tasks;
 

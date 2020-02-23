@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -28,7 +26,9 @@ namespace Scarlet.Api.Game.EverybodyEditsUniverse
 
 			// a PngSerializer hack/workaround is for the first color in the palette to be
 			// the world background.
-			// TODO: make PngSerializer support a background color
+			// TODO: make PngSerializer support a background color (1/2)
+			// ^ technically does support a background color by changing the first color
+			// in the palette (2/2)
 			Memory<Rgba32> colors;
 
 			if (world.BackgroundColor <= -1)
@@ -47,7 +47,8 @@ namespace Scarlet.Api.Game.EverybodyEditsUniverse
 			}
 
 			// TODO: if there is a background color, copy the colors and modify
-			// the first color (0) to be the background color.
+			// the first color (0) to be the background color. (1/2)
+			// ^ already being done (2/2)
 
 			var result = new ScarletGameWorld
 			{

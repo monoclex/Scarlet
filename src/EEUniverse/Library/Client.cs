@@ -55,6 +55,7 @@ namespace EEUniverse.Library
 		public int MinBuffer { get; set; } = 4096; // 4 kb
 
 		public Thread _messageReceiverThread;
+
 		// public readonly ClientWebSocket _socket;
 		public readonly string _token;
 

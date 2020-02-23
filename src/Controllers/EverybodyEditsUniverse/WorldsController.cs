@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+
 using Scarlet.Api;
+
 using System;
 using System.Threading.Tasks;
 
@@ -23,7 +25,6 @@ namespace Scarlet.Controllers.EverybodyEditsEverybodyEditsUniverse
 			_scarlet = scarlet;
 		}
 
-		// TODO: cleaner return result
 		[HttpGet("{id}")]
 		public Task<Memory<byte>> Minimap(string id, [FromQuery] int scale = 1)
 		{

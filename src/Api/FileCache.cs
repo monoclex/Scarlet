@@ -1,4 +1,8 @@
-﻿using Scarlet.Api.Misc;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
+using Scarlet.Api.Misc;
+
 using System;
 using System.IO;
 using System.Text;
@@ -13,12 +17,19 @@ namespace Scarlet.Api
 	{
 		private readonly string _cacheDirectory;
 		private readonly TimeSpan _timeToExpire;
+		private readonly ILogger<FileCache> _logger;
 
 		public FileCache(string cacheDirectory, TimeSpan timeToExpire)
+			: this(NullLogger<FileCache>.Instance, cacheDirectory, timeToExpire)
 		{
+		}
+
+		public FileCache(ILogger<FileCache> logger, string cacheDirectory, TimeSpan timeToExpire)
+		{
+			_logger = logger;
+			_cacheDirectory = Path.GetFullPath(cacheDirectory);
 			_timeToExpire = timeToExpire;
 
-			_cacheDirectory = Path.GetFullPath(cacheDirectory);
 			Directory.CreateDirectory(_cacheDirectory);
 
 			// delete all `.lock` files from the last execution
@@ -29,7 +40,6 @@ namespace Scarlet.Api
 					File.Delete(file);
 				}
 			}
-
 		}
 
 		public FileInfo CacheDirectory => new FileInfo(_cacheDirectory);
@@ -63,7 +73,9 @@ namespace Scarlet.Api
 
 		private void ReleaseLock(string lockFile)
 		{
-		// using a goto instead of a while because it's easier i guess
+			// using a goto instead of a while because it's easier i guess
+			int attempt = 0;
+
 		RETRY_DELETION:
 
 			try
@@ -75,8 +87,12 @@ namespace Scarlet.Api
 			}
 			catch (IOException)
 			{
+				attempt++;
+
+				_logger.LogWarning("Unable to delete lockfile {0}, on attempt {1}", lockFile, attempt);
+
 				// pretty bad
-				// TODO: catch multiple failures
+				// TODO: catch multiple failures <-- how?
 				goto RETRY_DELETION;
 			}
 		}
@@ -94,7 +110,7 @@ namespace Scarlet.Api
 			return lifetime > _timeToExpire;
 		}
 
-		public async ValueTask<Memory<byte>> TryRead(string cacheKey, Func<ValueTask<MustFreeBlock>> compute)
+		public async ValueTask<Memory<byte>> TryRead(string cacheKey, Func<ValueTask<OwnedMemory>> compute)
 		{
 			var failures = -1;
 			var cacheFile = GetCacheFile(cacheKey);
@@ -105,8 +121,8 @@ namespace Scarlet.Api
 
 			if (failures >= 10)
 			{
-				// bad
-				// TODO: log warning
+				_logger.LogWarning("Failed more than 10 times while attempting to read '{0}' located at {1}", cacheKey, cacheFile);
+
 				Memory<byte> copied;
 
 				using (var computed = await compute().ConfigureAwait(false))
@@ -176,7 +192,7 @@ namespace Scarlet.Api
 						ReleaseLock(lockFile);
 					}
 
-					// TODO: don't new up arrays
+					// TODO: don't new up arrays, make use of MustFreeBlock in all consuming code
 					var copy = new byte[result.Memory.Length];
 					result.Memory.CopyTo(copy);
 					return copy; /*********** FUNCTION EXIT ************/

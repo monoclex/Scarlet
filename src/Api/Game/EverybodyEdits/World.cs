@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
+﻿using System.Text.Json.Serialization;
 
 namespace Scarlet.Api.Game.EverybodyEdits
 {
@@ -77,5 +73,7 @@ namespace Scarlet.Api.Game.EverybodyEdits
 
 		// new addition, doesn't need to abide to old ruleset.
 		public uint BackgroundColor { get; internal set; }
+
+		public string BackgroundColorHex => $"{BackgroundColor:x2}".PadLeft(6, '0');
 	}
 }
