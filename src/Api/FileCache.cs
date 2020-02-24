@@ -12,9 +12,12 @@ namespace Scarlet.Api
 	public class FileCache
 	{
 		private readonly string _cacheDirectory;
+		private readonly TimeSpan _timeToExpire;
 
-		public FileCache(string cacheDirectory)
+		public FileCache(string cacheDirectory, TimeSpan timeToExpire)
 		{
+			_timeToExpire = timeToExpire;
+
 			_cacheDirectory = Path.GetFullPath(cacheDirectory);
 			Directory.CreateDirectory(_cacheDirectory);
 
@@ -26,6 +29,7 @@ namespace Scarlet.Api
 					File.Delete(file);
 				}
 			}
+
 		}
 
 		public FileInfo CacheDirectory => new FileInfo(_cacheDirectory);
@@ -80,6 +84,16 @@ namespace Scarlet.Api
 		private bool IsLock(string lockFile)
 			=> File.Exists(lockFile);
 
+		private bool IsExpired(string cacheFile)
+		{
+			var fileInfo = new FileInfo(cacheFile);
+
+			var creation = fileInfo.CreationTimeUtc;
+			var lifetime = DateTime.UtcNow - creation;
+
+			return lifetime > _timeToExpire;
+		}
+
 		public async ValueTask<Memory<byte>> TryRead(string cacheKey, Func<ValueTask<MustFreeBlock>> compute)
 		{
 			var failures = -1;
@@ -113,9 +127,13 @@ namespace Scarlet.Api
 			{
 				try
 				{
-					// TODO: delete cache file if it expired
-					var data = File.ReadAllBytes(cacheFile);
-					return data; /*********** FUNCTION EXIT ************/
+					// we don't want to read the cache file if it's expired
+					// we'll fall into the case below
+					if (!IsExpired(cacheFile))
+					{
+						var data = File.ReadAllBytes(cacheFile);
+						return data; /*********** FUNCTION EXIT ************/
+					}
 				}
 				catch (IOException)
 				{
@@ -139,6 +157,9 @@ namespace Scarlet.Api
 				{
 					using var result = await compute().ConfigureAwait(false);
 
+					// if it exists, we'll delete it so the creation time changes
+					MaybeDelete(cacheFile);
+
 					try
 					{
 						using (var fs = File.OpenWrite(cacheFile))
@@ -148,19 +169,7 @@ namespace Scarlet.Api
 					}
 					catch (IOException)
 					{
-						try
-						{
-							if (File.Exists(cacheFile))
-							{
-								File.Delete(cacheFile);
-							}
-						}
-						catch (IOException)
-						{
-							// if we couldn't delete the existing old cache file,
-							// that will most likely mean that it has already been
-							// deleted. if it hasn't, oh well i guess
-						}
+						MaybeDelete(cacheFile);
 					}
 					finally
 					{
@@ -182,6 +191,34 @@ namespace Scarlet.Api
 			}
 
 			goto RETRY; /*********** RETRY LOOP ************/
+
+			static void MaybeDelete(string file)
+			{
+				try
+				{
+					if (File.Exists(file))
+					{
+						File.Delete(file);
+					}
+				}
+				catch (IOException)
+				{
+				}
+			}
+		}
+
+		/// <summary>Ages the file so that on the next read, it expires.</summary>
+		public void Age(string cacheKey)
+		{
+			var cacheFile = GetCacheFile(cacheKey);
+
+			if (!File.Exists(cacheFile))
+			{
+				return;
+			}
+
+			var fileInfo = new FileInfo(cacheFile);
+			fileInfo.CreationTimeUtc = DateTime.UnixEpoch;
 		}
 
 		private ValueTask WaitForFileDeletion(string file)

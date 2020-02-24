@@ -32,15 +32,21 @@ namespace Scarlet.Controllers.EverybodyEdits
 		}
 
 		[HttpGet("{id}/meta")]
-		public Task Metadata(string id)
+		public Task<Memory<byte>> Metadata(string id)
 		{
 			HttpContext.Response.ContentType = "application/json";
 			return _scarlet.EEMetadata(id).AsTask();
 		}
 
 		[HttpGet("{id}/update")]
-		public async Task Update(string id)
+		public async Task<object> Update(string id)
 		{
+			_scarlet.EEUpdate(id);
+
+			return new
+			{
+				Success = true
+			};
 		}
 	}
 }

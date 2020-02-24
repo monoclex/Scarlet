@@ -37,7 +37,7 @@ namespace Scarlet
 			services.AddSingleton(eeuClientProvider);
 			services.AddSingleton(eeuGameApi);
 
-			var cache = new FileCache("cache");
+			var cache = new FileCache("cache", System.TimeSpan.FromMinutes(1));
 			services.AddSingleton(cache);
 
 			var scarlet = new ScarletApi(cache, eeGameApi, eeuGameApi);

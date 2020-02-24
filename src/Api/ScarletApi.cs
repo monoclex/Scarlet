@@ -53,6 +53,17 @@ namespace Scarlet.Api
 			});
 		}
 
+		public void EEUpdate(string worldId)
+		{
+			_cache.Age($"ee.[{worldId}]");
+			_cache.Age($"ee.[{worldId}].metadata");
+
+			foreach (var i in Config.EnumerateScale)
+			{
+				_cache.Age($"ee.[{worldId}].minimap.[{i}]");
+			}
+		}
+
 		public ValueTask<Memory<byte>> EEUMinimap(string worldId, int scale = 1)
 		{
 			return _cache.TryRead($"eeu.[{worldId}].minimap.[{scale}]", async () =>
@@ -71,6 +82,17 @@ namespace Scarlet.Api
 				var world = await GetWorld($"eeu.[{worldId}]", _everybodyEditsUniverse, worldId).ConfigureAwait(false);
 				return world.Metadata;
 			});
+		}
+
+		public void EEUUpdate(string worldId)
+		{
+			_cache.Age($"eeu.[{worldId}]");
+			_cache.Age($"eeu.[{worldId}].metadata");
+
+			foreach (var i in Config.EnumerateScale)
+			{
+				_cache.Age($"eeu.[{worldId}].minimap.[{i}]");
+			}
 		}
 
 		private async ValueTask<ScarletGameWorld> GetWorld(string cacheKey, IScarletGameApi gameApi, string worldId)

@@ -27,7 +27,7 @@ namespace Scarlet.Controllers.EverybodyEditsEverybodyEditsUniverse
 		[HttpGet("{id}")]
 		public Task<Memory<byte>> Minimap(string id, [FromQuery] int scale = 1)
 		{
-			scale = Math.Clamp(scale, 1, 4); // TODO: config somewhere
+			scale = Config.ClampToScale(scale);
 			HttpContext.Response.ContentType = "image/png";
 			return _scarlet.EEUMinimap(id, scale).AsTask();
 		}
@@ -40,8 +40,14 @@ namespace Scarlet.Controllers.EverybodyEditsEverybodyEditsUniverse
 		}
 
 		[HttpGet("{id}/update")]
-		public async Task Update(string id)
+		public async Task<object> Update(string id)
 		{
+			_scarlet.EEUUpdate(id);
+
+			return new
+			{
+				Success = true
+			};
 		}
 	}
 }
