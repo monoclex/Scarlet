@@ -128,7 +128,36 @@ namespace Scarlet.Api
 			{
 				_logger.LogWarning("Failed more than 10 times while attempting to read '{0}' located at {1}", cacheKey, cacheFile);
 
-				return await compute().ConfigureAwait(false);
+				// the computation *could* fail, and we might have to rethrow.
+				// BUT, if the computation *fails*, and the file *exists*,
+				// that means we'll be returning expired data to the user
+				//
+				// but returning something is better than nothing.
+
+				/*********** FUNCTION EXIT ************/
+				// ^ guarenteed to exit after this point
+
+				try
+				{
+					return await compute().ConfigureAwait(false);
+				}
+				catch
+				{
+					if (File.Exists(cacheFile))
+					{
+						// cacheFile is BOUND to be expired.
+						try
+						{
+							return File.ReadAllBytes(cacheFile);
+						}
+						catch (IOException)
+						{
+							// if we can't, then that's odd, but oh well.
+						}
+					}
+
+					throw;
+				}
 			}
 
 			if (IsLock(lockFile))
@@ -196,6 +225,21 @@ namespace Scarlet.Api
 					// an exception occurred while computing
 					// we will release the lock, and then rethrow the exception to the caller
 					ReleaseLock(lockFile);
+
+					// *though*, we won't throw if we have some kind of data to give back to the caller
+					if (File.Exists(cacheFile))
+					{
+						// cacheFile is BOUND to be expired.
+						try
+						{
+							return File.ReadAllBytes(cacheFile);
+						}
+						catch (IOException)
+						{
+							// if we can't, then that's odd, but oh well.
+						}
+					}
+
 					throw;
 				}
 			}
