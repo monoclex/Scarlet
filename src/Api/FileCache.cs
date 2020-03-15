@@ -112,7 +112,7 @@ namespace Scarlet.Api
 			var creation = fileInfo.CreationTimeUtc;
 			var lifetime = DateTime.UtcNow - creation;
 
-			return lifetime > _timeToExpire;
+			return lifetime >= _timeToExpire;
 		}
 
 		public async ValueTask<OwnedMemory> TryRead(string cacheKey, Func<ValueTask<OwnedMemory>> compute)
@@ -141,7 +141,7 @@ namespace Scarlet.Api
 				{
 					return await compute().ConfigureAwait(false);
 				}
-				catch
+				catch (Exception ex)
 				{
 					if (File.Exists(cacheFile))
 					{
@@ -150,9 +150,10 @@ namespace Scarlet.Api
 						{
 							return File.ReadAllBytes(cacheFile);
 						}
-						catch (IOException)
+						catch (IOException ex2)
 						{
 							// if we can't, then that's odd, but oh well.
+							_logger.LogWarning(ex2, "Failed reading cached file '{0}'", cacheFile);
 						}
 					}
 
@@ -177,7 +178,7 @@ namespace Scarlet.Api
 						return data; /*********** FUNCTION EXIT ************/
 					}
 				}
-				catch (IOException)
+				catch (IOException ex)
 				{
 					// we failed while reading it, this may mean a couple things:
 					// - someone aquired a lock on the file and delete it
@@ -197,6 +198,7 @@ namespace Scarlet.Api
 				// we have the lock
 				try
 				{
+					_logger.LogTrace("Running Computation instead of cache retrieval.");
 					using var result = await compute().ConfigureAwait(false);
 
 					// if it exists, we'll delete it so the creation time changes

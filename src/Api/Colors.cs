@@ -17,9 +17,9 @@ namespace Scarlet
 	{
 		public const int Size = 4;
 
-		// all just to circumvent system text json
-		[FieldOffset(0)] private byte _R;
+		// all just to circumvent System.Text.Json's inability to serialize fields
 
+		[FieldOffset(0)] private byte _R;
 		[FieldOffset(1)] private byte _B;
 		[FieldOffset(2)] private byte _G;
 		[FieldOffset(3)] private byte _A;

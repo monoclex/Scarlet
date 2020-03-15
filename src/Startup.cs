@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 using Scarlet.Api;
 using Scarlet.Api.Game;
@@ -22,7 +23,7 @@ namespace Scarlet
 		// For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
 		public void ConfigureServices(IServiceCollection services)
 		{
-			services.AddSingleton(new FileCache("cache", System.TimeSpan.FromMinutes(1)));
+			services.AddSingleton(provider => new FileCache(provider.GetRequiredService<ILogger<FileCache>>(), "cache", System.TimeSpan.FromHours(1)));
 
 			// TODO: use ASP Net Core configuration stuff
 			services.AddSingleton(new ColorsConfiguration

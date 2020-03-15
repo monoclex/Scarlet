@@ -68,9 +68,9 @@ namespace Scarlet.Api
 
 			// using constants to prevent lots of slicing on the span, might save half a nanosecond :)
 			WritePngHeader(png);
-			WriteIHDRChunk(png.Slice(PngHeaderSize, IHDRSize), request.Width, request.Height);
+			WriteIHDRChunk(png.Slice(PngHeaderSize, IHDRSize), request.Width * request.Scale, request.Height * request.Scale);
 			WriteTEXTChunk(png.Slice(PngHeaderSize + IHDRSize, TEXTSize));
-			var written = WriteIDATChunk(png.Slice(PngHeaderSize + IHDRSize + TEXTSize), zlib, request.Width, request.Blocks.Span, request.Palette.Span[0], request.Palette.Span);
+			var written = WriteIDATChunk(png.Slice(PngHeaderSize + IHDRSize + TEXTSize), zlib, request.Width, request.Blocks.Span, request.Palette.Span[0], request.Palette.Span, request.Scale);
 			WriteIENDChunk(png.Slice(PngHeaderSize + IHDRSize + TEXTSize + written, IENDSize));
 
 			var totalSize = PngHeaderSize + IHDRSize + TEXTSize + written + IENDSize;
@@ -89,15 +89,21 @@ namespace Scarlet.Api
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		private static (int PngTarget, int RawPngData) AllocationSize(SerializeWorldRequest request)
 		{
+			var artificialWidth = request.Width * request.Scale;
+			var artificialHeight = request.Height * request.Scale;
+
 			// `n` byte(s) per block, plus 1 byte per row (`+ height`).
 			//
 			// This addition 1 byte per row comes from the PNG standard,
 			// the filter type per scanline (https://www.w3.org/TR/2003/REC-PNG-20031110/#4Concepts.EncodingFiltering)
-			int raw_png_stream_length =
-				// 4 bytes per block (RGBA triplet)
-				request.Blocks.Length * 4
-				// 1 byte per scanline
-				+ request.Height;
+			int rawPngStreamLength =
+				// scale the width & height by what they need to get
+				// the correct amount of blocks. that will then be multiplied by 4,
+				// because of each RGBA pixel per block.
+				(artificialWidth * artificialHeight * 4)
+				// 1 byte per scanline, and there well be `scale` more scanlines if the
+				// world is scaled.
+				+ artificialHeight;
 
 			// Quote from https://zlib.net/zlib_tech.html:
 			// "In the worst possible case, [...] the only expansion is an overhead of five bytes per 16 KB block (about 0.03%),
@@ -106,8 +112,8 @@ namespace Scarlet.Api
 			// This will allocate enough bytes to satisfy the worst case scenario.
 
 			// '16KB' does indeed refer to 16KiB.
-			const int CPI_ZLIB_BLOCK_SIZE = 16384;
-			int zlib_worst_case =
+			const int ZlibBlockSize = 16384;
+			int zlibWorstCase =
 
 				// 6 bytes overhead for the stream
 				// (2 bytes header, 4 bytes alder32)
@@ -117,13 +123,13 @@ namespace Scarlet.Api
 				// Integer rounding up: https://stackoverflow.com/a/2422722
 
 				// calc blocks
-				(((raw_png_stream_length + (CPI_ZLIB_BLOCK_SIZE - 1)) / CPI_ZLIB_BLOCK_SIZE)
+				(((rawPngStreamLength + (ZlibBlockSize - 1)) / ZlibBlockSize)
 
 					// 5 bytes per block
 					* 5)
 
 				// after the zlib overhead comes the actual data
-				+ raw_png_stream_length;
+				+ rawPngStreamLength;
 
 			// `zlib_worst_case` is the amount of bytes necessary to be allocated, just for compressing the PNG data.
 			// There must also be bytes allocated for the PNG itself.
@@ -144,10 +150,10 @@ namespace Scarlet.Api
 				+ CPI_PNG_tEXt_SIZE
 				+ CPI_PNG_IHDR_SIZE
 				+ CPI_PNG_PLTE_SIZE(request.Palette.Length)
-				+ CPI_PNG_IDAT_SIZE(zlib_worst_case)
+				+ CPI_PNG_IDAT_SIZE(zlibWorstCase)
 				+ CPI_PNG_IEND_SIZE;
 
-			return (png_size_with_zlib_worst_case, raw_png_stream_length);
+			return (png_size_with_zlib_worst_case, rawPngStreamLength);
 		}
 
 		private const int PngHeaderSize = sizeof(ulong);
@@ -256,7 +262,7 @@ namespace Scarlet.Api
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		private static int WriteIDATChunk(Span<byte> png, Span<byte> zlib, int width, Span<ushort> blocks, Rgba32 backgroundColor, Span<Rgba32> palette)
+		private static int WriteIDATChunk(Span<byte> png, Span<byte> zlib, int width, Span<ushort> blocks, Rgba32 backgroundColor, Span<Rgba32> palette, int scale)
 		{
 			// come back to the length of the chunk later
 			var chunkLength = png.Slice(0, 4);
@@ -271,47 +277,116 @@ namespace Scarlet.Api
 			// it may seem backwards to write the PNG data not to the png
 			// section, but we'd have to end up copying the data in the zlib
 			// section back to the png section.
-
+			//
+			// it's really a matter of bad naming
 			var offset = 0;
 
-			for (var i = 0; i < blocks.Length; i++)
+			if (scale == 1)
 			{
-				// for every scanline, we need to define the filter method
-				if (i % width == 0)
+				// typically, scale will be 1. this is a routine specifically
+				// optimized for that
+
+				for (var i = 0; i < blocks.Length; i++)
 				{
-					// http://www.libpng.org/pub/png/spec/1.2/PNG-Chunks.html#C.IDAT
-					// (Note that with filter method 0, the only one currently
-					// defined, this implies prepending a filter-type byte to
-					// each scanline.)
-					zlib[offset++] = 0;
+					// for every scanline, we need to define the filter method
+					if (i % width == 0)
+					{
+						// http://www.libpng.org/pub/png/spec/1.2/PNG-Chunks.html#C.IDAT
+						// (Note that with filter method 0, the only one currently
+						// defined, this implies prepending a filter-type byte to
+						// each scanline.)
+						zlib[offset++] = 0;
+					}
+
+					var block = blocks[i];
+
+					// TODO: use uint magic or something
+					var color = GetColor(block, palette);
+
+					var slice = zlib.Slice(offset, sizeof(uint));
+					slice[0] = color.R;
+					slice[1] = color.G;
+					slice[2] = color.B;
+					slice[3] = color.A;
+					offset += 4;
+				}
+			}
+			else
+			{
+				// for non one scale things, we apply the following optimizations:
+				//
+				// - read in every color once, and write it twice
+				// - once we write a row, we copy what we just wrote over
+				//
+				// in contrast to just a for loop for each block color & height for
+				// the scale, this is much more efficient
+
+				//                    RGBA pixels v   v scanline
+				var rowLength = (width * scale) * 4 + 1;
+				var lastScanlinePosition = -1;
+
+				// we'll always do the action once first
+				// then we'll need to copy it scale minus one (one because we already did it) times
+				var copies = scale - 1;
+
+				for (var i = 0; i < blocks.Length; i++)
+				{
+					if (i % width == 0)
+					{
+						// if we haven't set the scanline position
+						if (lastScanlinePosition != -1)
+						{
+							// there was data before this row
+							// let's copy out the data, and paste it as many times
+							// as the scale calls for
+							var row = zlib.Slice(lastScanlinePosition, rowLength);
+
+							// for as many times as we need to scale
+							for (int j = 0; j < copies; j++)
+							{
+								row.CopyTo(zlib.Slice(offset, rowLength));
+								offset += rowLength;
+							}
+						}
+
+						lastScanlinePosition = offset;
+						zlib[offset++] = 0;
+					}
+
+					var block = blocks[i];
+
+					// TODO: use uint magic or something
+					var color = GetColor(block, palette);
+
+					var slice = zlib.Slice(offset, sizeof(uint));
+					slice[0] = color.R;
+					slice[1] = color.G;
+					slice[2] = color.B;
+					slice[3] = color.A;
+					offset += 4;
+
+					for (int j = 0; j < copies; j++)
+					{
+						slice.CopyTo(zlib.Slice(offset, sizeof(uint)));
+						offset += 4;
+					}
 				}
 
-				var block = blocks[i];
-				var color = GetColor(block, palette);
-
-				var slice = zlib.Slice(offset, sizeof(uint));
-				slice[0] = color.R;
-				slice[1] = color.G;
-				slice[2] = color.B;
-				slice[3] = color.A;
-				offset += 4;
-
-				Rgba32 GetColor(ushort block, Span<Rgba32> palette)
+				// copied and pasted the code to paste the rows here
+				// when the above loop finishes going through every block, it still
+				// has to copy over the last scanline `copies` times
 				{
-					if (block >= palette.Length)
+					// there was data before this row
+					// let's copy out the data, and paste it as many times
+					// as the scale calls for
+					var row = zlib.Slice(lastScanlinePosition, rowLength);
+
+					// for as many times as we need to scale
+					for (int j = 0; j < copies; j++)
 					{
-						return backgroundColor;
+						row.CopyTo(zlib.Slice(offset, rowLength));
+						offset += rowLength;
 					}
-
-					var color = palette[block];
-
-					// if it's default(Rgba32), that means it doesn't have a color
-					if (Rgba32.ToUInt32(ref color) == 0)
-					{
-						return backgroundColor;
-					}
-
-					return color;
 				}
 			}
 
@@ -319,6 +394,7 @@ namespace Scarlet.Api
 			// if zlib doesn't perfectly match our length, we've miscalculated
 			// the amount of bytes to allocate.
 			Debug.Assert(offset == zlib.Length);
+			zlib = zlib.Slice(0, offset); // DEBUG
 
 			var written = Zlib.Compress(png.Slice(8), zlib);
 			// crc32 from the name to the end
@@ -330,6 +406,24 @@ namespace Scarlet.Api
 			Debug.Assert(couldWriteChunkLength);
 
 			return 8 + written + 4;
+
+			Rgba32 GetColor(ushort block, Span<Rgba32> palette)
+			{
+				if (block >= palette.Length)
+				{
+					return backgroundColor;
+				}
+
+				var color = palette[block];
+
+				// if it's default(Rgba32), that means it doesn't have a color
+				if (Rgba32.ToUInt32(ref color) == 0)
+				{
+					return backgroundColor;
+				}
+
+				return color;
+			}
 		}
 
 		private const int IENDSize =
