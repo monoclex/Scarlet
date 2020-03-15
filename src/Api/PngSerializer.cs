@@ -6,6 +6,10 @@ using System.IO.Compression;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+// TODO: clean this up - it's gotten a tad messy
+// make sure comments and stuff are in order,
+// fix up the WriteIDATData routine (duplicated code)
+
 namespace Scarlet.Api
 {
 	/// <summary>
@@ -14,6 +18,27 @@ namespace Scarlet.Api
 	/// </summary>
 	public static class PngSerializer
 	{
+		private ref struct DebugTimings
+		{
+#if DEBUG
+			public string Name { get; set; }
+			public Stopwatch Stopwatch { get; set; }
+
+			public static DebugTimings Start(string name) => new DebugTimings { Name = name, Stopwatch = Stopwatch.StartNew() };
+
+			public void Dispose()
+			{
+				Stopwatch.Stop();
+				Console.WriteLine($"{Name} - {Stopwatch.ElapsedMilliseconds}ms ({Stopwatch.ElapsedTicks} ticks)");
+			}
+#else
+			public static DebugTimings Start(string name) => default;
+			public void Dispose()
+			{
+			}
+#endif
+		}
+
 		public struct SerializeWorldRequest
 		{
 			public int Width;
@@ -281,111 +306,114 @@ namespace Scarlet.Api
 			// it's really a matter of bad naming
 			var offset = 0;
 
-			if (scale == 1)
+			using (var _ = DebugTimings.Start("Draw Pixels"))
 			{
-				// typically, scale will be 1. this is a routine specifically
-				// optimized for that
-
-				for (var i = 0; i < blocks.Length; i++)
+				if (scale == 1)
 				{
-					// for every scanline, we need to define the filter method
-					if (i % width == 0)
+					// typically, scale will be 1. this is a routine specifically
+					// optimized for that
+
+					for (var i = 0; i < blocks.Length; i++)
 					{
-						// http://www.libpng.org/pub/png/spec/1.2/PNG-Chunks.html#C.IDAT
-						// (Note that with filter method 0, the only one currently
-						// defined, this implies prepending a filter-type byte to
-						// each scanline.)
-						zlib[offset++] = 0;
-					}
-
-					var block = blocks[i];
-
-					// TODO: use uint magic or something
-					var color = GetColor(block, palette);
-
-					var slice = zlib.Slice(offset, sizeof(uint));
-					slice[0] = color.R;
-					slice[1] = color.G;
-					slice[2] = color.B;
-					slice[3] = color.A;
-					offset += 4;
-				}
-			}
-			else
-			{
-				// for non one scale things, we apply the following optimizations:
-				//
-				// - read in every color once, and write it twice
-				// - once we write a row, we copy what we just wrote over
-				//
-				// in contrast to just a for loop for each block color & height for
-				// the scale, this is much more efficient
-
-				//                    RGBA pixels v   v scanline
-				var rowLength = (width * scale) * 4 + 1;
-				var lastScanlinePosition = -1;
-
-				// we'll always do the action once first
-				// then we'll need to copy it scale minus one (one because we already did it) times
-				var copies = scale - 1;
-
-				for (var i = 0; i < blocks.Length; i++)
-				{
-					if (i % width == 0)
-					{
-						// if we haven't set the scanline position
-						if (lastScanlinePosition != -1)
+						// for every scanline, we need to define the filter method
+						if (i % width == 0)
 						{
-							// there was data before this row
-							// let's copy out the data, and paste it as many times
-							// as the scale calls for
-							var row = zlib.Slice(lastScanlinePosition, rowLength);
-
-							// for as many times as we need to scale
-							for (int j = 0; j < copies; j++)
-							{
-								row.CopyTo(zlib.Slice(offset, rowLength));
-								offset += rowLength;
-							}
+							// http://www.libpng.org/pub/png/spec/1.2/PNG-Chunks.html#C.IDAT
+							// (Note that with filter method 0, the only one currently
+							// defined, this implies prepending a filter-type byte to
+							// each scanline.)
+							zlib[offset++] = 0;
 						}
 
-						lastScanlinePosition = offset;
-						zlib[offset++] = 0;
-					}
+						var block = blocks[i];
 
-					var block = blocks[i];
+						// TODO: use uint magic or something
+						var color = GetColor(block, palette);
 
-					// TODO: use uint magic or something
-					var color = GetColor(block, palette);
-
-					var slice = zlib.Slice(offset, sizeof(uint));
-					slice[0] = color.R;
-					slice[1] = color.G;
-					slice[2] = color.B;
-					slice[3] = color.A;
-					offset += 4;
-
-					for (int j = 0; j < copies; j++)
-					{
-						slice.CopyTo(zlib.Slice(offset, sizeof(uint)));
+						var slice = zlib.Slice(offset, sizeof(uint));
+						slice[0] = color.R;
+						slice[1] = color.G;
+						slice[2] = color.B;
+						slice[3] = color.A;
 						offset += 4;
 					}
 				}
-
-				// copied and pasted the code to paste the rows here
-				// when the above loop finishes going through every block, it still
-				// has to copy over the last scanline `copies` times
+				else
 				{
-					// there was data before this row
-					// let's copy out the data, and paste it as many times
-					// as the scale calls for
-					var row = zlib.Slice(lastScanlinePosition, rowLength);
+					// for non one scale things, we apply the following optimizations:
+					//
+					// - read in every color once, and write it twice
+					// - once we write a row, we copy what we just wrote over
+					//
+					// in contrast to just a for loop for each block color & height for
+					// the scale, this is much more efficient
 
-					// for as many times as we need to scale
-					for (int j = 0; j < copies; j++)
+					//                    RGBA pixels v   v scanline
+					var rowLength = (width * scale) * 4 + 1;
+					var lastScanlinePosition = -1;
+
+					// we'll always do the action once first
+					// then we'll need to copy it scale minus one (one because we already did it) times
+					var copies = scale - 1;
+
+					for (var i = 0; i < blocks.Length; i++)
 					{
-						row.CopyTo(zlib.Slice(offset, rowLength));
-						offset += rowLength;
+						if (i % width == 0)
+						{
+							// if we haven't set the scanline position
+							if (lastScanlinePosition != -1)
+							{
+								// there was data before this row
+								// let's copy out the data, and paste it as many times
+								// as the scale calls for
+								var row = zlib.Slice(lastScanlinePosition, rowLength);
+
+								// for as many times as we need to scale
+								for (int j = 0; j < copies; j++)
+								{
+									row.CopyTo(zlib.Slice(offset, rowLength));
+									offset += rowLength;
+								}
+							}
+
+							lastScanlinePosition = offset;
+							zlib[offset++] = 0;
+						}
+
+						var block = blocks[i];
+
+						// TODO: use uint magic or something
+						var color = GetColor(block, palette);
+
+						var slice = zlib.Slice(offset, sizeof(uint));
+						slice[0] = color.R;
+						slice[1] = color.G;
+						slice[2] = color.B;
+						slice[3] = color.A;
+						offset += 4;
+
+						for (int j = 0; j < copies; j++)
+						{
+							slice.CopyTo(zlib.Slice(offset, sizeof(uint)));
+							offset += 4;
+						}
+					}
+
+					// copied and pasted the code to paste the rows here
+					// when the above loop finishes going through every block, it still
+					// has to copy over the last scanline `copies` times
+					{
+						// there was data before this row
+						// let's copy out the data, and paste it as many times
+						// as the scale calls for
+						var row = zlib.Slice(lastScanlinePosition, rowLength);
+
+						// for as many times as we need to scale
+						for (int j = 0; j < copies; j++)
+						{
+							row.CopyTo(zlib.Slice(offset, rowLength));
+							offset += rowLength;
+						}
 					}
 				}
 			}
@@ -396,9 +424,18 @@ namespace Scarlet.Api
 			Debug.Assert(offset == zlib.Length);
 			zlib = zlib.Slice(0, offset); // DEBUG
 
-			var written = Zlib.Compress(png.Slice(8), zlib);
+			int written;
+			using (var _ = DebugTimings.Start("Zlib compression"))
+			{
+				written = Zlib.Compress(png.Slice(8), zlib);
+			}
+
 			// crc32 from the name to the end
-			var crc32 = Crc32.Compute(png.Slice(4, 4 + written));
+			uint crc32;
+			using (var _ = DebugTimings.Start("Crc32 Computation"))
+			{
+				crc32 = Crc32.Compute(png.Slice(4, 4 + written));
+			}
 			var couldWriteCrc32 = BinaryPrimitives.TryWriteUInt32BigEndian(png.Slice(8 + written, 4), crc32);
 			Debug.Assert(couldWriteCrc32);
 

@@ -109,6 +109,10 @@ namespace Scarlet.Api.Game.EverybodyEdits
 
 			var spanColors = colors.Values.Span;
 
+			// stackallocing outside to prevent stack overflows
+			Span<byte> xConversion = stackalloc byte[sizeof(ushort)];
+			Span<byte> yConversion = stackalloc byte[sizeof(ushort)];
+
 			foreach (var objEntry in objects)
 			{
 				Debug.Assert(objEntry is DatabaseObject);
@@ -183,11 +187,9 @@ namespace Scarlet.Api.Game.EverybodyEdits
 				for (var i = 0; i < x.Length; i += 2)
 				{
 					// we will use this to convert an x/y to a number
-					Span<byte> xConversion = stackalloc byte[sizeof(ushort)];
 					xConversion[0] = x[i];
 					xConversion[1] = x[i + 1];
 
-					Span<byte> yConversion = stackalloc byte[sizeof(ushort)];
 					yConversion[0] = y[i];
 					yConversion[1] = y[i + 1];
 
