@@ -28,13 +28,19 @@ namespace Scarlet
 			services.AddSingleton(new ColorsConfiguration
 			{
 				EE = Colors.FromFile(_configuration["ColorFiles:EE"]),
-				EEU = Colors.FromFile(_configuration["ColorFiles:EEU"])
+				EEU = Colors.FromFile(_configuration["ColorFiles:EEU"]),
+			});
+
+			services.AddSingleton(new Api.Game.EverybodyEdits.AuthenticationCredentials
+			{
+				Email = _configuration["EverybodyEdits:Login:Email"],
+				Password = _configuration["EverybodyEdits:Login:Password"],
 			});
 
 			services.AddSingleton<Api.Game.EverybodyEdits.ClientProvider>();
 			services.AddSingleton<IEEScarletGameApi, Api.Game.EverybodyEdits.ScarletGameApi>();
 
-			services.AddSingleton(new Api.Game.EverybodyEditsUniverse.ClientProvider(_configuration["GoogleLoginToken"]));
+			services.AddSingleton(new Api.Game.EverybodyEditsUniverse.ClientProvider(_configuration["EverybodyEditsUniverse:GoogleLoginToken"]));
 			services.AddSingleton<IEEUScarletGameApi, Api.Game.EverybodyEditsUniverse.ScarletGameApi>();
 
 			services.AddSingleton<IEEScarletApi, ScarletApi>(provider => new ScarletApi(provider.GetRequiredService<FileCache>(), "ee", provider.GetRequiredService<IEEScarletGameApi>()));

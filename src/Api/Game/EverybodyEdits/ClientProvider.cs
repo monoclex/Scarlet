@@ -11,15 +11,17 @@ namespace Scarlet.Api.Game.EverybodyEdits
 	public class ClientProvider
 	{
 		private readonly Colors _everybodyEditsColors;
+		private readonly AuthenticationCredentials _credentials;
 
-		public ClientProvider(ColorsConfiguration colors)
+		private SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
+		private Client _lifetimeClient;
+		private GameClient _gameClient;
+
+		public ClientProvider(ColorsConfiguration colors, AuthenticationCredentials credentials)
 		{
 			_everybodyEditsColors = colors.EE;
+			_credentials = credentials;
 		}
-
-		private static SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
-		private static Client _lifetimeClient;
-		private static GameClient _gameClient;
 
 		public async ValueTask<GameClient> Obtain()
 		{
@@ -29,7 +31,7 @@ namespace Scarlet.Api.Game.EverybodyEdits
 			{
 				if (_lifetimeClient != null && _gameClient != null) return _gameClient;
 
-				_lifetimeClient = PlayerIO.Connect("everybody-edits-su9rn58o40itdbnw69plyw", "public", "user", "", "");
+				_lifetimeClient = PlayerIO.QuickConnect.SimpleConnect("everybody-edits-su9rn58o40itdbnw69plyw", _credentials.Email, _credentials.Password, null);
 
 				_gameClient = new GameClient(_lifetimeClient, _everybodyEditsColors);
 				return _gameClient;

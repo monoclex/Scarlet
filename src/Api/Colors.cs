@@ -17,10 +17,17 @@ namespace Scarlet
 	{
 		public const int Size = 4;
 
-		[FieldOffset(0)] public byte R;
-		[FieldOffset(1)] public byte B;
-		[FieldOffset(2)] public byte G;
-		[FieldOffset(3)] public byte A;
+		// all just to circumvent system text json
+		[FieldOffset(0)] private byte _R;
+
+		[FieldOffset(1)] private byte _B;
+		[FieldOffset(2)] private byte _G;
+		[FieldOffset(3)] private byte _A;
+
+		public byte R { get => _R; set => _R = value; }
+		public byte B { get => _B; set => _B = value; }
+		public byte G { get => _G; set => _G = value; }
+		public byte A { get => _A; set => _A = value; }
 
 		public static Rgba32 FromARGB(uint color)
 			=> new Rgba32
