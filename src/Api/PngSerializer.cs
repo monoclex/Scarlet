@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics.X86;
 
 namespace Scarlet.Api
 {
@@ -359,7 +358,7 @@ namespace Scarlet.Api
 		{
 			public static uint Compute(ReadOnlySpan<byte> data)
 			{
-				// TODO: use Sse42.Crc32 & Sse42.X64.Crc32 for faster hardware computation
+				// TODO: (maybe?) use Sse42.Crc32 & Sse42.X64.Crc32 for faster hardware computation
 				return SoftwareFallback.Compute(data);
 			}
 
@@ -414,32 +413,6 @@ namespace Scarlet.Api
 				{
 					var result = UpdateCrc(0xFFFFFFFF, data) ^ 0xFFFFFFFF;
 					return (uint)result;
-				}
-			}
-
-			public static class HardwareFallback
-			{
-				// control flow taken from https://stackoverflow.com/a/59004565
-				public static uint Compute(ReadOnlySpan<byte> data)
-				{
-					uint crc32 = ~0u;
-
-					int i = 0;
-
-					if (Sse42.X64.IsSupported)
-					{
-						for (; i + 8 < data.Length; i += 8)
-						{
-							crc32 = (uint)Sse42.X64.Crc32(crc32, BinaryPrimitives.ReadUInt64BigEndian(data.Slice(i, 8)));
-						}
-					}
-
-					for (; i < data.Length; i++)
-					{
-						crc32 = Sse42.Crc32(crc32, data[i]);
-					}
-
-					return crc32 ^ ~0u;
 				}
 			}
 		}
