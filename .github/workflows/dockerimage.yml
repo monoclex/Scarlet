@@ -1,0 +1,43 @@
+name: Auto Deployment
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build
+      run: docker build . --file Dockerfile --tag ${{ secrets.PRIVATE_CONTAINER_REGISTRY_TAG }}
+    
+    - name: Docker Login
+      uses: Azure/docker-login@v1
+      with:
+        username: ${{ secrets.AZURE_REGISTRY_USERNAME }}
+        password: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
+        login-server: ${{ secrets.PRIVATE_CONTAINER_REGISTRY }}
+        
+    - name: Azure Login
+      uses: Azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Fetch Deployment Secrets
+      uses: Azure/get-keyvault-secrets@v1
+      with:
+        keyvault: "sirjosh-vault"
+        secrets:  'ScarletEEEmail, ScarletEEPassword, GoogleLoginToken, ScarletACRSPNUsername, ScarletACRSPNPassword'
+        id: azureSecrets
+        
+    - name: Deployment
+      uses: JimCronqvist/action-ssh@master
+      with:
+        hosts: ${{ secrets.DEPLOYMENTv1_HOST }}
+        privateKey: ${{ secrets.DEPLOYMENTv1_RSA_PRIVATE_KEY }}
+        command: ${{ secrets.DEPLOYMENTv1_COMMAND }} ${{ steps.azureSecrets.outputs.ScarletEEEmail }} ${{ steps.azureSecrets.outputs.ScarletEEPassword }} ${{ steps.azureSecrets.outputs.GoogleLoginToken }} ${{ steps.azureSecrets.outputs.ScarletACRSPNUsername }} ${{ steps.azureSecrets.outputs.ScarletACRSPNPassword }}
