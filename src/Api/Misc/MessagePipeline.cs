@@ -53,7 +53,7 @@ namespace MessagePipeline
 			{
 				if (filter(message))
 				{
-					tcs.SetResult(message);
+					tcs.TrySetResult(message);
 					return new ValueTask<bool>(false);
 				}
 
@@ -64,10 +64,7 @@ namespace MessagePipeline
 			// cancel the TCS if the cancellation token expires
 			cancellationToken.Register(() =>
 			{
-				if (!tcs.Task.IsCompleted)
-				{
-					tcs.SetCanceled();
-				}
+				tcs.TrySetCanceled();
 			}, false);
 
 			return tcs.Task;

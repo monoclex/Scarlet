@@ -26,18 +26,34 @@ namespace Scarlet.Controllers.EverybodyEditsEverybodyEditsUniverse
 		}
 
 		[HttpGet("{id}")]
-		public Task<OwnedMemory> Minimap(string id, [FromQuery] int scale = 1)
+		public async Task<object> Minimap(string id, [FromQuery] int scale = 1)
 		{
 			scale = Config.ClampToScale(scale);
 			HttpContext.Response.ContentType = "image/png";
-			return _scarlet.GetMinimap(id, scale).AsTask();
+
+			try
+			{
+				return await _scarlet.GetMinimap(id, scale).ConfigureAwait(false);
+			}
+			catch (TaskCanceledException)
+			{
+				return StatusCode(500);
+			}
 		}
 
 		[HttpGet("{id}/meta")]
-		public Task<OwnedMemory> Metadata(string id)
+		public async Task<object> Metadata(string id)
 		{
 			HttpContext.Response.ContentType = "application/json";
-			return _scarlet.GetMetadata(id).AsTask();
+
+			try
+			{
+				return await _scarlet.GetMetadata(id).ConfigureAwait(false);
+			}
+			catch (TaskCanceledException)
+			{
+				return StatusCode(500);
+			}
 		}
 
 		[HttpGet("{id}/update")]
