@@ -26,7 +26,7 @@ namespace Scarlet.Api.Game.EverybodyEditsUniverse
 
 			// we must join a world to download the blocks in it
 
-			var initTask = worldPipeline.Expect(message => message.Type == MessageType.Init);
+			var initTask = worldPipeline.Expect(message => message.Type == MessageType.Init, TimeSpan.FromSeconds(5));
 
 			await world.SendAsync(MessageType.Init, 0).ConfigureAwait(false);
 			var initMessage = await initTask.ConfigureAwait(false);
