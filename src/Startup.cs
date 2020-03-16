@@ -63,6 +63,8 @@ namespace Scarlet
 				app.UseDeveloperExceptionPage();
 			}
 
+			app.UseCorsMiddleware();
+
 			app.UseRouting();
 
 			app.UseEndpoints(endpoints =>
