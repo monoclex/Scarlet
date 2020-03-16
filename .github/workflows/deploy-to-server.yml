@@ -40,4 +40,4 @@ jobs:
       with:
         hosts: ${{ secrets.DEPLOYMENTv1_HOST }}
         privateKey: ${{ secrets.DEPLOYMENTv1_RSA_PRIVATE_KEY }}
-        command: ${{ secrets.DEPLOYMENTv1_COMMAND }} ${{ steps.azureSecrets.outputs.ScarletEEEmail }} ${{ steps.azureSecrets.outputs.ScarletEEPassword }} ${{ steps.azureSecrets.outputs.GoogleLoginToken }} ${{ steps.azureSecrets.outputs.ScarletACRSPNUsername }} ${{ steps.azureSecrets.outputs.ScarletACRSPNPassword }}
+        command: ${{ secrets.DEPLOYMENTv1_COMMAND }} "${{ steps.azureSecrets.outputs.ScarletEEEmail }}" "${{ steps.azureSecrets.outputs.ScarletEEPassword }}" "${{ steps.azureSecrets.outputs.GoogleLoginToken }}" "${{ steps.azureSecrets.outputs.ScarletACRSPNUsername }}" "${{ steps.azureSecrets.outputs.ScarletACRSPNPassword }}"
