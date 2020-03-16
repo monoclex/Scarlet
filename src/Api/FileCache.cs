@@ -284,10 +284,7 @@ namespace Scarlet.Api
 
 			watcher.Deleted += (sender, e) =>
 			{
-				if (!tcs.Task.IsCompleted)
-				{
-					tcs.SetResult(default);
-				}
+				tcs.TrySetResult(default);
 			};
 
 			watcher.EnableRaisingEvents = true;
@@ -295,7 +292,7 @@ namespace Scarlet.Api
 			// the lock might've dissapeared by the time we get down here and we would've never picked up on it
 			if (!IsLock(file))
 			{
-				tcs.SetCanceled();
+				tcs.TrySetCanceled();
 				watcher.Dispose();
 				return new ValueTask();
 			}
