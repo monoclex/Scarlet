@@ -1,5 +1,6 @@
 ﻿using PlayerIOClient;
 
+using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 
@@ -33,6 +34,11 @@ namespace Scarlet.Api.Game.EverybodyEdits
 		public async Task<World> DownloadWorld(string worldId)
 		{
 			var dbo = await DownloadObject("Worlds", worldId).ConfigureAwait(false);
+
+			if (dbo == null)
+			{
+				throw new InvalidOperationException($"Couldn't download world '{worldId}'");
+			}
 
 			return new World
 			{
