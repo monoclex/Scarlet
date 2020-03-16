@@ -33,7 +33,7 @@ jobs:
       with:
         keyvault: "sirjosh-vault"
         secrets:  'ScarletEEEmail, ScarletEEPassword, GoogleLoginToken, ScarletACRSPNUsername, ScarletACRSPNPassword'
-        id: azureSecrets
+      id: azureSecrets
         
     - name: Deployment
       uses: JimCronqvist/action-ssh@master
