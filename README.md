@@ -1,2 +1,2 @@
-# Scarlet
+# Scarlet ![Auto Deployment](https://github.com/SirJosh3917/Scarlet/workflows/Auto%20Deployment/badge.svg)
 Scarlet is the new Minimap Viewer API for EE & EEU, yielding immensely better performance than the predecessors and fully open source.
