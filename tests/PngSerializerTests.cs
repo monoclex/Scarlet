@@ -57,14 +57,6 @@ namespace Scarlet.Tests
 				.Should().Be(crcValue);
 		}
 
-		[Theory]
-		[MemberData(nameof(Crc32AlgorithmTestsData))]
-		public void HardwareCrc32Tests(byte[] bytes, uint crcValue)
-		{
-			PngSerializer.Crc32.HardwareFallback.Compute(bytes)
-				.Should().Be(crcValue);
-		}
-
 		// https://tools.ietf.org/html/rfc3720#appendix-B.4
 		public static IEnumerable<object[]> Crc32AlgorithmTestsData()
 		{
