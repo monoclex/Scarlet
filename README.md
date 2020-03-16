@@ -1,2 +1,2 @@
 # Scarlet
-Scarlet - Codename for the APIs provided at api.sirjosh3917.com
+Scarlet is the new Minimap Viewer API for EE & EEU, yielding immensely better performance than the predecessors and fully open source.
