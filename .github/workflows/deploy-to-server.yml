@@ -22,6 +22,9 @@ jobs:
         username: ${{ secrets.AZURE_REGISTRY_USERNAME }}
         password: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
         login-server: ${{ secrets.PRIVATE_CONTAINER_REGISTRY }}
+    
+    - name: Push
+      run: docker push ${{ secrets.PRIVATE_CONTAINER_REGISTRY_TAG }}
         
     - name: Azure Login
       uses: Azure/login@v1
