@@ -6,7 +6,6 @@ using Scarlet.Api.Misc;
 using System;
 using System.IO;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Scarlet.Api
@@ -19,12 +18,6 @@ namespace Scarlet.Api
 		private readonly string _cacheDirectory;
 		private readonly TimeSpan _timeToExpire;
 		private readonly ILogger<FileCache> _logger;
-
-		// this is a complete hack to ensure that the file cache never has to undergo any kind of contention.
-		// it's a complete hack, but given the traffic of EE/EEU, shouldn't be a problem.
-		//
-		// plus, i really need to sleep, and this is an easy way to not have the world implode when i wake up
-		private SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
 
 		public FileCache(string cacheDirectory)
 			: this(cacheDirectory, TimeSpan.FromDays(1))
@@ -123,20 +116,6 @@ namespace Scarlet.Api
 		}
 
 		public async ValueTask<OwnedMemory> TryRead(string cacheKey, Func<ValueTask<OwnedMemory>> compute)
-		{
-			await _lock.WaitAsync().ConfigureAwait(false);
-
-			try
-			{
-				return await TryReadInner(cacheKey, compute).ConfigureAwait(false);
-			}
-			finally
-			{
-				_lock.Release();
-			}
-		}
-
-		private async ValueTask<OwnedMemory> TryReadInner(string cacheKey, Func<ValueTask<OwnedMemory>> compute)
 		{
 			var failures = -1;
 			var cacheFile = GetCacheFile(cacheKey);
