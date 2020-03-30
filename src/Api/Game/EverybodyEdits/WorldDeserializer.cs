@@ -162,7 +162,11 @@ namespace Scarlet.Api.Game.EverybodyEdits
 				// some blocks are very transparent, to the point you can't see
 				// these blocks are "pointless"
 				var isPointless = color.A < 100; // arbitrary limit
-				if (isPointless) continue;
+
+				// if a block is fully transparent, it might be a special black block.
+				// don't ignore it
+				var isFullyTransparent = color.A == 0;
+				if (isPointless && !isFullyTransparent) continue;
 
 				// for every location this block is in, we're going to try to
 				// place it into our array of blocks. if a position on the map

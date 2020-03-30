@@ -72,12 +72,21 @@ namespace Scarlet
 				rgba32.R = valueTable.Get<byte>("r");
 				rgba32.G = valueTable.Get<byte>("g");
 				rgba32.B = valueTable.Get<byte>("b");
-				rgba32.A = 255; // default value for A
+				rgba32.A = byte.MaxValue; // fully visible
 
 				if (valueTable.TryGetValue("a", out var alphaObject)
 					&& alphaObject is TomlInt alphaInt)
 				{
 					rgba32.A = alphaInt.Get<byte>();
+				}
+
+				if (rgba32.A == 0)
+				{
+					// if full transparency, set RGB to 255 because that draws fully transparent
+					// pixels for some reason
+					rgba32.R = byte.MaxValue;
+					rgba32.G = byte.MaxValue;
+					rgba32.B = byte.MaxValue;
 				}
 
 				colorsMap[intKey] = rgba32;

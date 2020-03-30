@@ -29,7 +29,7 @@ namespace Scarlet.Api.Game.EverybodyEditsUniverse
 					ushort background = (ushort)((data >> 16) & 0x0000FFFF);
 					ushort foreground = (ushort)(data & 0x0000FFFF);
 
-					var primaryId = IsTransparent(foreground) ? background : foreground;
+					var primaryId = YieldsToBackground(foreground) ? background : foreground;
 					blocks[blocksIndex++] = primaryId;
 
 					// there may be additional data after this depending on the block
@@ -56,7 +56,7 @@ namespace Scarlet.Api.Game.EverybodyEditsUniverse
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-		public static bool IsTransparent(ushort blockId)
+		public static bool YieldsToBackground(ushort blockId)
 			=> blockId == 0 // air
 			|| blockId == 11 // coin
 			|| (blockId >= 13 && blockId <= 17) // action blocks & god
@@ -64,6 +64,8 @@ namespace Scarlet.Api.Game.EverybodyEditsUniverse
 			|| IsSign(blockId)
 			|| IsPortal(blockId)
 			|| blockId == 70 // crown
+			|| (blockId >= 92 && blockId <= 94) // [global, multijump, highjump] effect
+			|| blockId == 96 // clear glass
 			;
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]

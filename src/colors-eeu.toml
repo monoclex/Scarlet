@@ -9,6 +9,7 @@
 8 = { r = 57, g = 156, b = 181 }
 9 = { r = 51, g = 83, b = 177 }
 10 = { r = 155, g = 52, b = 178 }
+12 = { r = 0, g = 0, b = 0, a = 0 } # Black Transparency Block
 18 = { r = 154, g = 152, b = 145 }
 19 = { r = 88, g = 88, b = 83 }
 20 = { r = 48, g = 47, b = 45 }
@@ -75,3 +76,8 @@
 89 = { r = 45, g = 78, b = 77 }
 90 = { r = 45, g = 62, b = 79 }
 91 = { r = 66, g = 55, b = 88 }
+92 = { r = 0, g = 0, b = 0 } # Global Effect (clear)
+93 = { r = 0, g = 0, b = 0 } # Multijump Effect
+94 = { r = 0, g = 0, b = 0 } # Highjump Effect
+95 = { r = 0, g = 0, b = 0, a = 0 } # Secret Passage
+96 = { r = 0, g = 0, b = 0 } # Clear Glass
