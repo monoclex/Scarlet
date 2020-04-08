@@ -45,6 +45,10 @@ namespace Scarlet.Api.Game.EverybodyEditsUniverse
 						i++; // target
 						i++; // flipped
 					}
+					else if (IsEffect(foreground))
+					{
+						i++; // effect data
+					}
 				}
 				else
 				{
@@ -75,5 +79,9 @@ namespace Scarlet.Api.Game.EverybodyEditsUniverse
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static bool IsPortal(ushort blockId)
 			=> blockId == 59;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static bool IsEffect(ushort blockId)
+			=> blockId >= 93 && blockId <= 94;
 	}
 }
