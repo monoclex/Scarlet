@@ -148,7 +148,9 @@ namespace Scarlet.Api.Game.EverybodyEdits
 				Debug.Assert(type != 0); // server does not save 0
 
 				// make sure it's within bounds during development
-				Debug.Assert(type >= 0 && type < colors.Values.Length);
+
+				// TODO: uncomment this line once we add colored spikes
+				// Debug.Assert(type >= 0 && type < colors.Values.Length, "There are more colors than the server has (block id: " + type + ")");
 
 				// in production we'll just cry
 				if (type >= colors.Values.Length || type < 0)
