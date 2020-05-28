@@ -49,6 +49,17 @@ namespace Scarlet
 			Values = colors;
 		}
 
+#if DEBUG
+		public Colors(Memory<bool> hadValues, Memory<Rgba32> colors)
+		{
+			HadValues = hadValues;
+			Values = colors;
+		}
+#endif
+
+#if DEBUG
+		public Memory<bool> HadValues { get; }
+#endif
 		public Memory<Rgba32> Values { get; }
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -61,6 +72,7 @@ namespace Scarlet
 		public static Colors FromToml(TomlTable table)
 		{
 			var colorsMap = new Dictionary<int, Rgba32>();
+			var hadValuesMap = new Dictionary<int, bool>();
 
 			foreach (var (key, value) in table)
 			{
@@ -90,16 +102,27 @@ namespace Scarlet
 				}
 
 				colorsMap[intKey] = rgba32;
+				hadValuesMap[intKey] = true;
 			}
 
 			var colors = new Rgba32[colorsMap.Max(x => x.Key) + 1];
+			var hadValues = new bool[hadValuesMap.Max(x => x.Key) + 1];
 
 			foreach (var (key, value) in colorsMap)
 			{
 				colors[key] = value;
 			}
 
+			foreach (var (key, value) in hadValuesMap)
+			{
+				hadValues[key] = value;
+			}
+
+#if DEBUG
+			return new Colors(hadValues, colors);
+#else
 			return new Colors(colors);
+#endif
 		}
 	}
 }

@@ -159,6 +159,14 @@ namespace Scarlet.Api.Game.EverybodyEdits
 					continue;
 				}
 
+#if DEBUG
+				if (!colors.HadValues.Span[(int)type])
+				{
+					Console.WriteLine("The colors file should have a value for block id " + type);
+				}
+				//Debug.Assert(colors.HadValues.Span[(int)type], "The colors file should have a value for block id " + type);
+#endif
+
 				var color = spanColors[(int)type];
 
 				// some blocks are very transparent, to the point you can't see
