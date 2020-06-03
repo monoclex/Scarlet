@@ -49,6 +49,15 @@ namespace Scarlet.Api.Game.EverybodyEditsUniverse
 					{
 						i++; // effect data
 					}
+					else if (IsSwitch(foreground))
+					{
+						i++; // channel (int)
+					}
+					else if (IsLocalDoor(foreground))
+					{
+						i++; // channel (int)
+						i++; // inverted (boolean)
+					}
 				}
 				else
 				{
@@ -70,6 +79,8 @@ namespace Scarlet.Api.Game.EverybodyEditsUniverse
 			|| blockId == 70 // crown
 			|| (blockId >= 92 && blockId <= 94) // [global, multijump, highjump] effect
 			|| blockId == 96 // clear glass
+			|| IsSwitch(blockId)
+			|| IsLocalDoor(blockId)
 			;
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -83,5 +94,13 @@ namespace Scarlet.Api.Game.EverybodyEditsUniverse
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static bool IsEffect(ushort blockId)
 			=> blockId >= 93 && blockId <= 94;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static bool IsSwitch(ushort blockId)
+			=> blockId >= 98 && blockId <= 99;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static bool IsLocalDoor(ushort blockId)
+			=> blockId == 100;
 	}
 }

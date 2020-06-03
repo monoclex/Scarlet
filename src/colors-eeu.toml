@@ -81,3 +81,6 @@
 94 = { r = 0, g = 0, b = 0 } # Highjump Effect
 95 = { r = 0, g = 0, b = 0, a = 0 } # Secret Passage
 96 = { r = 0, g = 0, b = 0 } # Clear Glass
+98 = { r = 0, g = 0, b = 0 } # Local Switch
+99 = { r = 0, g = 0, b = 0 } # Local Resetter
+100 = { r = 0, g = 0, b = 0 } # Local Door
