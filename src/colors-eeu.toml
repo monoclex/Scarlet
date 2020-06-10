@@ -84,3 +84,6 @@
 98 = { r = 0, g = 0, b = 0 } # Local Switch
 99 = { r = 0, g = 0, b = 0 } # Local Resetter
 100 = { r = 0, g = 0, b = 0 } # Local Door
+101 = { r = 0, g = 0, b = 0 } # Global Switch
+102 = { r = 0, g = 0, b = 0 } # Global Resetter
+103 = { r = 0, g = 0, b = 0 } # Global Door
