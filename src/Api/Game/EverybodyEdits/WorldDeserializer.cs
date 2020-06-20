@@ -173,9 +173,14 @@ namespace Scarlet.Api.Game.EverybodyEdits
 				// these blocks are "pointless"
 				var isPointless = color.A < 100; // arbitrary limit
 
+				// TODO: i have no idea what the commend below is suppose to fix
+				// in the meantime, i've commented out the fully transparent
+				// check to resolve the issue where placing dots infront of a background
+				// is invisible on the minimap.
+
 				// if a block is fully transparent, it might be a special black block.
 				// don't ignore it
-				var isFullyTransparent = color.A == 0;
+				var isFullyTransparent = false; // color.A == 0;
 				if (isPointless && !isFullyTransparent) continue;
 
 				// for every location this block is in, we're going to try to
