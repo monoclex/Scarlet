@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -7,6 +9,8 @@ using Microsoft.Extensions.Logging;
 
 using Scarlet.Api;
 using Scarlet.Api.Game;
+
+using System.Diagnostics;
 
 namespace Scarlet
 {
@@ -61,6 +65,19 @@ namespace Scarlet
 			if (env.IsDevelopment())
 			{
 				app.UseDeveloperExceptionPage();
+			}
+			else
+			{
+				app.UseExceptionHandler(new ExceptionHandlerOptions
+				{
+					ExceptionHandler = async (httpContext) =>
+					{
+						httpContext.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+						httpContext.Response.Headers.Add("Access-Control-Allow-Credentials", "true");
+						httpContext.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Date, X-Api-Version, X-File-Name");
+						httpContext.Response.Headers.Add("Access-Control-Allow-Methods", "POST,GET,PUT,PATCH,DELETE,OPTIONS");
+					}
+				});
 			}
 
 			app.UseCorsMiddleware();
