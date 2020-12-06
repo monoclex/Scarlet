@@ -58,6 +58,10 @@ namespace Scarlet.Api.Game.EverybodyEditsUniverse
 						i++; // channel (int)
 						i++; // inverted (boolean)
 					}
+					else if (IsPlatform(foreground))
+					{
+						i++; // rotation (int i think)
+					}
 				}
 				else
 				{
@@ -112,5 +116,9 @@ namespace Scarlet.Api.Game.EverybodyEditsUniverse
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static bool IsGlobalDoor(ushort blockId)
 			=> blockId == 103;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static bool IsPlatform(ushort blockId)
+			=> blockId == 106 || blockId == 120;
 	}
 }
