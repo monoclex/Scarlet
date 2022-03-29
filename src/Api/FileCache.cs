@@ -220,7 +220,7 @@ namespace Scarlet.Api
 						ReleaseLock(lockFile);
 					}
 
-					return result; /*********** FUNCTION EXIT ************/
+					return result.Clone(); /*********** FUNCTION EXIT ************/
 				}
 				catch (Exception)
 				{

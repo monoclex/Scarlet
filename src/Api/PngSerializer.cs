@@ -52,8 +52,7 @@ namespace Scarlet.Api
 
 		public struct SerializeWorldResult
 		{
-			public ArrayPool<byte> ArrayPool;
-			public byte[] RentedArray;
+			public byte[] Array;
 			public Memory<byte> Png;
 		}
 
@@ -79,12 +78,9 @@ namespace Scarlet.Api
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public static SerializeWorldResult Serialize(SerializeWorldRequest request)
 		{
-			// TODO: support custom array pools?
-			var arrayPool = ArrayPool<byte>.Shared;
-
 			// figure out how much data we need and allocate it
 			var (pngSize, zlibSize) = AllocationSize(request);
-			var array = arrayPool.Rent(pngSize + zlibSize);
+			var array = new byte[pngSize + zlibSize];
 
 			var png = new Span<byte>(array, 0, pngSize);
 			var zlib = new Span<byte>(array, pngSize, zlibSize);
@@ -102,8 +98,7 @@ namespace Scarlet.Api
 
 			return new SerializeWorldResult
 			{
-				ArrayPool = arrayPool,
-				RentedArray = array,
+				Array = array,
 				Png = new Memory<byte>(array, 0, totalSize)
 			};
 		}

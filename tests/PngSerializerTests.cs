@@ -44,9 +44,6 @@ namespace Scarlet.Tests
 
 			// developer must check this file to make sure the PNG works
 			File.WriteAllBytes("manually-confirm-image.png", result.Png.ToArray());
-
-			// good samaritan
-			result.ArrayPool.Return(result.RentedArray);
 		}
 
 		[Theory]

@@ -39,14 +39,8 @@ namespace Scarlet
 
 		private async Task WriteOwned(PipeWriter writer, OwnedMemory ownedMemory)
 		{
-			try
-			{
-				await writer.WriteAsync(ownedMemory.Memory, default).ConfigureAwait(false);
-			}
-			finally
-			{
-				ownedMemory.Dispose();
-			}
+			using var usingOwnedMemory = ownedMemory;
+			await writer.WriteAsync(usingOwnedMemory.Memory, default).ConfigureAwait(false);
 		}
 	}
 }

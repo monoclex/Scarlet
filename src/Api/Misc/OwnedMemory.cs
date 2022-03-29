@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 
 namespace Scarlet.Api.Misc
 {
@@ -29,8 +30,21 @@ namespace Scarlet.Api.Misc
 			=> new OwnedMemory(NoAction, block);
 
 		public static implicit operator OwnedMemory(PngSerializer.SerializeWorldResult result)
-			=> new OwnedMemory(() => result.ArrayPool.Return(result.RentedArray), result.Png);
+			=> new OwnedMemory(NoAction, result.Array);
 
+		public OwnedMemory Clone()
+		{
+			var clonedContents = new byte[Memory.Length];
+			Memory<byte> clonedSlice = clonedContents;
+			
+			Memory.CopyTo(clonedSlice);
+			return clonedSlice;
+
+			// var rentedArray = ArrayPool<byte>.Shared.Rent(Memory.Length);
+			// var rentedSlice = new Memory<byte>(rentedArray, 0, Memory.Length);
+			// return new OwnedMemory(() => ArrayPool<byte>.Shared.Return(rentedArray), rentedSlice);
+		}
+		
 		private static void NoAction()
 		{
 		}
